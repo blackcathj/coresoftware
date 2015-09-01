@@ -37,7 +37,7 @@ PHG4SpacalSubsystem::PHG4SpacalSubsystem( const std::string &na, const int lyr):
   active(0),
   absorberactive(0),
   layer(lyr),
-  lengthViaRapidityCoverage(true),
+  lengthViaRapidityCoverage(false),
   detector_type(na),
   superdetector("NONE")
 {

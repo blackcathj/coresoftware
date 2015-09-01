@@ -125,6 +125,8 @@ public:
   load_demo_sector_tower_map2();
   void
   load_demo_sector_tower_map3();
+  void
+  load_demo_sector_tower_map4();
 
   const tower_map_t &
   get_sector_tower_map() const
