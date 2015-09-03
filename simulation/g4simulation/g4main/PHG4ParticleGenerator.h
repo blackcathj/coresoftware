@@ -2,6 +2,7 @@
 #define PHG4ParticleGenerator_H__
 
 #include "PHG4ParticleGeneratorBase.h"
+#include <TRandom3.h>
 
 class PHG4ParticleGenerator: public PHG4ParticleGeneratorBase
 {
@@ -13,7 +14,7 @@ class PHG4ParticleGenerator: public PHG4ParticleGeneratorBase
   void set_z_range(const double z_min, const double z_max);
   void set_eta_range(const double eta_min, const double eta_max);
   void set_phi_range(const double phi_min, const double phi_max);
-  void set_mom_range(const double mom_min, const double mom_max);
+  void set_mom_range(const double mom_min, const double mom_max, const double gaus_spread = 0);
   void set_seed(const int seed);
   void set_vtx(const double x, const double y, const double z);
 
@@ -26,6 +27,9 @@ class PHG4ParticleGenerator: public PHG4ParticleGeneratorBase
   double phi_max;
   double mom_min;
   double mom_max;
+  double mom_spread;
+
+  TRandom3 randgen;
 };
 
 #endif

@@ -23,7 +23,8 @@ PHG4ParticleGenerator::PHG4ParticleGenerator(const string &name):
   phi_min(-M_PI),
   phi_max(M_PI),
   mom_min(0.0),
-  mom_max(10.0)
+  mom_max(10.0),mom_spread(0),
+  randgen(0)
 {
   return;
 }
@@ -68,18 +69,19 @@ PHG4ParticleGenerator::set_vtx(const double x, const double y, const double z)
 }
 
 void
-PHG4ParticleGenerator::set_mom_range(const double min, const double max)
+PHG4ParticleGenerator::set_mom_range(const double min, const double max, const double gaus_spread)
 {
   mom_min = min;
   mom_max = max;
+  mom_spread = gaus_spread;
   return;
 }
 
 void
 PHG4ParticleGenerator::set_seed(const int seed)
 {
-  srand(seed);
-  
+//  srand(seed);
+  randgen.SetSeed(seed);
   return;
 }
 
@@ -88,7 +90,7 @@ PHG4ParticleGenerator::process_event(PHCompositeNode *topNode)
 {
   PHG4InEvent *ineve = findNode::getClass<PHG4InEvent>(topNode,"PHG4INEVENT");
 
-  vtx_z = (z_max-z_min)*rand()/(double)(RAND_MAX) + z_min;
+  vtx_z = (z_max-z_min)*randgen.Uniform() + z_min;
   int vtxindex = ineve->AddVtx(vtx_x,vtx_y,vtx_z,t0);
 
   vector<PHG4Particle *>::const_iterator iter;
@@ -96,9 +98,11 @@ PHG4ParticleGenerator::process_event(PHCompositeNode *topNode)
     {
       PHG4Particle *particle = new PHG4Particlev2(*iter);
       SetParticleId(particle,ineve);
-      double mom = (mom_max - mom_min)*rand()/(double)(RAND_MAX) + mom_min;
-      double eta = (eta_max - eta_min)*rand()/(double)(RAND_MAX) + eta_min;
-      double phi = (phi_max - phi_min)*rand()/(double)(RAND_MAX) + phi_min;
+      double mom = (mom_max - mom_min)*randgen.Uniform() + mom_min;
+      if (mom_spread>0) mom += randgen.Gaus(0,mom_spread);
+
+      double eta = (eta_max - eta_min)*randgen.Uniform() + eta_min;
+      double phi = (phi_max - phi_min)*randgen.Uniform() + phi_min;
       double pt = mom/cosh(eta);
 
       particle->set_e(mom);
