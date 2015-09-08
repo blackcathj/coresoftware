@@ -140,10 +140,10 @@ PHG4CylinderGeom_Spacalv3::get_tower_z_phi_ID(const int tower_ID,
     const int sector_ID) const
 {
   // tower_ID to eta/z within a sector
-  const int z_bin = floor(tower_ID / 10);
+  const int z_bin = tower_ID;// SPACAL test beam
 
   // colume ID is from -x to +x at the top of the detector, which is reverse of the phi bin direction.
-  const int phi_bin_in_sec = max_phi_bin_in_sec - (tower_ID % 10);
+  const int phi_bin_in_sec = 0; // SPACAL test beam
 
   if (!(phi_bin_in_sec < max_phi_bin_in_sec and phi_bin_in_sec >= 0))
     {

@@ -137,6 +137,32 @@ RawTowerBuilder::process_event(PHCompositeNode *topNode)
     }
 
   _towers->compress(emin);
+
+  // Digitization
+  for (int ieta = 0; ieta < _netabins; ieta++)
+    for (int iphi = 0; iphi <= 2; iphi++) //SPACAL test beam
+      {
+
+        RawTower *tower = _towers->getTower(ieta, iphi);
+        if (!tower)
+          {
+            tower = new RawTowerv1(ieta, iphi);
+            ;
+            _towers->AddTower(ieta, iphi, tower);
+          }
+        assert(tower);
+
+        const double photon_count_mean = tower->get_light_yield() / 0.02206 * 500;//500 photon per 1 GeV total deposition
+        const double photon_count = randgen.PoissonD(photon_count_mean);
+        const double pedstal = randgen.Gaus(0,8*2);//8 photon pedstal zeroed mean ~ 2ADC
+
+//        tower -> set_light_yield((float)(photon_count ));
+        tower -> set_light_yield((float)(photon_count + pedstal));
+      }
+
+
+
+
   if (verbosity)
     {
       cout << "Energy lost by dropping towers with less than "

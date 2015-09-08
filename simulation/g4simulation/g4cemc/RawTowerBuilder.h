@@ -5,6 +5,7 @@
 #include <string>
 
 #include <phool/PHTimeServer.h>
+#include <TRandom3.h>
 
 class PHCompositeNode;
 class RawTowerContainer;
@@ -45,6 +46,8 @@ class RawTowerBuilder : public SubsysReco {
   double _phistep;
 
   PHTimeServer::timer _timer;
+
+  TRandom3 randgen;
 
 };
 
