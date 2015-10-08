@@ -178,7 +178,7 @@ std::set<SvtxTrack*> SvtxTrackEval::all_tracks_from(PHG4Particle* truthparticle)
 	   ++jter) {
 	PHG4Particle* candidate = *jter;
 	// if track id matches argument add to output
-	if (candidate->get_track_id() == truthparticle->get_track_id()) {
+	if (candidate->get_primary_id() == truthparticle->get_track_id()) {
 	  tracks.insert(track);
 	}
       }

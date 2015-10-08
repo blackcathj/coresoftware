@@ -173,7 +173,11 @@ PHG4Particle* SvtxTruthEval::get_particle(PHG4Hit* g4hit) {
 
 int SvtxTruthEval::get_embed(PHG4Particle* particle) {
 
-  return _truthinfo->isEmbeded(particle->get_track_id());
+  if (is_primary(particle))
+    return _truthinfo->isEmbeded(particle->get_track_id());
+  else
+  //g4particle is from the G4 particle list, trace to its primary then check embedded status.
+    return _truthinfo->isEmbeded(particle->get_primary_id());
 }
 
 bool SvtxTruthEval::is_primary(PHG4Particle* particle) {
