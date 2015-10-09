@@ -177,6 +177,10 @@ std::set<SvtxTrack*> SvtxTrackEval::all_tracks_from(PHG4Particle* truthparticle)
     }
   }
   
+  // this is a quick line to allow this function to handle both G4 truth particle and primary particle as input
+  // a better way will be something like CaloTruthEval::get_primary_particle()
+  const int primary_id = (truthparticle->get_primary_id() == -1) ? truthparticle->get_track_id(): truthparticle->get_primary_id();
+
   std::set<SvtxTrack*> tracks;
   
   // loop over all SvtxTracks
@@ -201,7 +205,7 @@ std::set<SvtxTrack*> SvtxTrackEval::all_tracks_from(PHG4Particle* truthparticle)
 	   ++jter) {
 	PHG4Particle* candidate = *jter;
 	// if track id matches argument add to output
-	if (candidate->get_primary_id() == truthparticle->get_track_id()) {
+	if (candidate->get_primary_id() == primary_id) {
 	  tracks.insert(track);
 	}
       }
@@ -313,6 +317,12 @@ unsigned int SvtxTrackEval::get_nclusters_contribution(SvtxTrack* track, PHG4Par
     }
   }
   
+  // this is a quick line to allow this function to handle both G4 truth particle and primary particle as input
+  // a better way will be something like CaloTruthEval::get_primary_particle()
+  const int primary_id = (particle->get_primary_id() == -1) ? particle->get_track_id(): particle->get_primary_id();
+
+
+
   unsigned int nclusters = 0; 
 
   // loop over all clusters
@@ -332,7 +342,7 @@ unsigned int SvtxTrackEval::get_nclusters_contribution(SvtxTrack* track, PHG4Par
 	 ++jter) {
       PHG4Particle* candidate = *jter;
       // if track id matches argument add to output
-      if (candidate->get_track_id() == particle->get_track_id()) {
+      if (candidate->get_primary_id() == primary_id) {
 	++nclusters;
       }
     }
