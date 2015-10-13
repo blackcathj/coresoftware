@@ -1314,7 +1314,7 @@ void SvtxEvaluator::fillOutputNtuples(PHCompositeNode *topNode) {
 	    gfz      = outerhit->get_z(1);
 	  }
 	  gembed   = trutheval->get_embed(g4particle);
-	  gprimary = g4particle->get_parent_id()<=0;//g4particle is G4 particle. g4particle->get_parent_id() == 0 would signal it is primary
+	  gprimary = trutheval->is_primary(g4particle);
 
 	  nfromtruth = trackeval->get_nclusters_contribution(track,g4particle);
 	}
