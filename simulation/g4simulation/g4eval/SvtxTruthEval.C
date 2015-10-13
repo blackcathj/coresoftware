@@ -1,6 +1,8 @@
 
 #include "SvtxTruthEval.h"
 
+#include "BaseTruthEval.h"
+
 #include <fun4all/getClass.h>
 #include <phool/PHCompositeNode.h>
 #include <g4main/PHG4TruthInfoContainer.h>
@@ -18,14 +20,17 @@
 using namespace std;
 
 SvtxTruthEval::SvtxTruthEval(PHCompositeNode* topNode)
-  : _truthinfo(NULL),
+  : _basetrutheval(topNode),
+    _truthinfo(NULL),
     _g4hits_svtx(NULL),
     _g4hits_tracker(NULL),
+    _strict(true),
     _do_cache(true),
     _cache_all_truth_hits(),
     _cache_all_truth_hits_g4particle(),
     _cache_get_innermost_truth_hit(),
-    _cache_get_outermost_truth_hit() {
+    _cache_get_outermost_truth_hit(),
+    _cache_get_primary_g4hit() {
   get_node_pointers(topNode);
 }
 
@@ -35,6 +40,9 @@ void SvtxTruthEval::next_event(PHCompositeNode* topNode) {
   _cache_all_truth_hits_g4particle.clear();
   _cache_get_innermost_truth_hit.clear();
   _cache_get_outermost_truth_hit.clear();
+  _cache_get_primary_g4hit.clear();
+
+  _basetrutheval.next_event(topNode);
   
   get_node_pointers(topNode);
 }
@@ -82,6 +90,9 @@ std::set<PHG4Hit*> SvtxTruthEval::all_truth_hits() {
 
 std::set<PHG4Hit*> SvtxTruthEval::all_truth_hits(PHG4Particle* particle) {
 
+  if (_strict) assert(particle);
+  else if (!particle) return std::set<PHG4Hit*>();
+  
   if (_do_cache) {
     std::map<PHG4Particle*,std::set<PHG4Hit*> >::iterator iter =
       _cache_all_truth_hits_g4particle.find(particle);
@@ -99,7 +110,7 @@ std::set<PHG4Hit*> SvtxTruthEval::all_truth_hits(PHG4Particle* particle) {
 	 ++g4iter) {
 
       PHG4Hit* g4hit = g4iter->second;
-      if (g4hit->get_trkid() != particle->get_track_id()) continue;
+      if (!is_g4hit_from_particle(g4hit,particle)) continue;
       truth_hits.insert(g4hit);
     }
   }
@@ -111,7 +122,7 @@ std::set<PHG4Hit*> SvtxTruthEval::all_truth_hits(PHG4Particle* particle) {
 	 ++g4iter) {
       
       PHG4Hit* g4hit = g4iter->second;
-      if (g4hit->get_trkid() != particle->get_track_id()) continue;
+      if (!is_g4hit_from_particle(g4hit,particle)) continue;
       truth_hits.insert(g4hit);
     }
   }
@@ -123,6 +134,9 @@ std::set<PHG4Hit*> SvtxTruthEval::all_truth_hits(PHG4Particle* particle) {
 
 PHG4Hit* SvtxTruthEval::get_innermost_truth_hit(PHG4Particle* particle) {
 
+  if (_strict) assert(particle);
+  else if (!particle) return NULL;
+  
   PHG4Hit* innermost_hit = NULL;
   float innermost_radius = FLT_MAX;
   
@@ -145,6 +159,9 @@ PHG4Hit* SvtxTruthEval::get_innermost_truth_hit(PHG4Particle* particle) {
 
 PHG4Hit* SvtxTruthEval::get_outermost_truth_hit(PHG4Particle* particle) {
 
+  if (_strict) assert(particle);
+  else if (!particle) return NULL;
+  
   PHG4Hit* outermost_hit = NULL;
   float outermost_radius = FLT_MAX*-1.0;
   
@@ -166,51 +183,61 @@ PHG4Hit* SvtxTruthEval::get_outermost_truth_hit(PHG4Particle* particle) {
 }
 
 PHG4Particle* SvtxTruthEval::get_particle(PHG4Hit* g4hit) {
-
-  PHG4Particle* particle = _truthinfo->GetHit( g4hit->get_trkid() );
-  return particle;
+  return _basetrutheval.get_particle(g4hit);
 }
 
 int SvtxTruthEval::get_embed(PHG4Particle* particle) {
-
-  if (is_primary(particle))
-    return _truthinfo->isEmbeded(particle->get_track_id());
-  else
-  //g4particle is from the G4 particle list, trace to its primary then check embedded status.
-    return _truthinfo->isEmbeded(particle->get_primary_id());
-}
-
-bool SvtxTruthEval::is_primary(PHG4Particle* particle) {
-
-  bool is_primary = true;
-  if (!_truthinfo->GetPrimaryHit(particle->get_track_id())) {
-    is_primary = false;
-  }
-  
-  return is_primary;
+  return _basetrutheval.get_embed(particle);
 }
 
 PHG4VtxPoint* SvtxTruthEval::get_vertex(PHG4Particle* particle) {
-
-  assert(particle);
-
-  if (particle->get_primary_id() == -1) {
-    return _truthinfo->GetPrimaryVtx( particle->get_vtx_id() );  
-  }
-
-  PHG4VtxPoint* vtx = _truthinfo->GetVtx( particle->get_vtx_id() );
-
-  if (!vtx)
-    {
-      cout<<__PRETTY_FUNCTION__<<" - Error - missing vertex for G4 track:"<<endl;
-      particle->identify();
-    }
-
-  return vtx;
+  return _basetrutheval.get_vertex(particle);
 }
 
-void SvtxTruthEval::get_node_pointers(PHCompositeNode* topNode) {
+bool SvtxTruthEval::is_primary(PHG4Particle* particle) {
+  return _basetrutheval.is_primary(particle);
+}
 
+PHG4Particle* SvtxTruthEval::get_primary(PHG4Hit* g4hit) {
+
+  if (_strict) assert(g4hit);
+  else if (!g4hit) return NULL;
+
+  if (_do_cache) {
+    std::map<PHG4Hit*,PHG4Particle*>::iterator iter =
+      _cache_get_primary_g4hit.find(g4hit);
+    if (iter != _cache_get_primary_g4hit.end()) {
+      return iter->second;
+    }
+  }
+  
+  PHG4Particle* primary = _basetrutheval.get_primary(g4hit);
+
+  if (_do_cache) _cache_get_primary_g4hit.insert(make_pair(g4hit,primary));
+  
+  if (_strict) assert(primary);
+  
+  return primary;
+}
+
+PHG4Particle* SvtxTruthEval::get_primary(PHG4Particle* particle) {
+  return _basetrutheval.get_primary(particle);
+}
+
+bool SvtxTruthEval::is_g4hit_from_particle(PHG4Hit* g4hit, PHG4Particle* particle) {
+  return _basetrutheval.is_g4hit_from_particle(g4hit,particle);
+}
+
+bool SvtxTruthEval::are_same_particle(PHG4Particle* p1, PHG4Particle* p2) {
+  return _basetrutheval.are_same_particle(p1,p2);
+}
+
+bool SvtxTruthEval::are_same_vertex(PHG4VtxPoint* vtx1, PHG4VtxPoint* vtx2) {
+  return _basetrutheval.are_same_vertex(vtx1,vtx2);
+}
+  
+void SvtxTruthEval::get_node_pointers(PHCompositeNode* topNode) {
+  
   _truthinfo = findNode::getClass<PHG4TruthInfoContainer>(topNode,"G4TruthInfo");
   if (!_truthinfo) {
     cerr << PHWHERE << " ERROR: Can't find G4TruthInfo" << endl;

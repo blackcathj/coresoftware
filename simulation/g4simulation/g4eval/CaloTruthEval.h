@@ -2,6 +2,8 @@
 #ifndef __CALOTRUTHEVAL_H__
 #define __CALOTRUTHEVAL_H__
 
+#include "BaseTruthEval.h"
+
 #include <phool/PHCompositeNode.h>
 #include <g4main/PHG4TruthInfoContainer.h>
 
@@ -23,6 +25,7 @@ public:
 
   void next_event(PHCompositeNode *topNode);
   void do_caching(bool do_cache) {_do_cache = do_cache;}
+  void set_strict(bool strict) {_strict = strict;}
 
   std::set<PHG4Hit*> all_truth_hits(PHG4Particle* particle);  
   PHG4Particle*      get_parent_particle(PHG4Hit* g4hit);
@@ -31,6 +34,10 @@ public:
   int                get_embed(PHG4Particle* particle);
   PHG4VtxPoint*      get_vertex(PHG4Particle* particle);
 
+  bool               is_g4hit_from_particle(PHG4Hit* g4hit, PHG4Particle* particle);
+  bool               are_same_particle(PHG4Particle* p1, PHG4Particle* p2);
+  bool               are_same_vertex(PHG4VtxPoint* vtx1, PHG4VtxPoint* vtx2);
+  
   bool               is_primary(PHG4Particle* particle);
   std::set<PHG4Hit*> get_shower_from_primary(PHG4Particle* primary);  
   float              get_shower_moliere_radius(PHG4Particle* primary);
@@ -39,11 +46,15 @@ public:
 private:
 
   void get_node_pointers(PHCompositeNode *topNode);
+
+  BaseTruthEval _basetrutheval;
   
   std::string _caloname;
   PHG4TruthInfoContainer* _truthinfo;
   PHG4HitContainer* _g4hits;
 
+  bool _strict;
+  
   bool                                        _do_cache;
   std::map<PHG4Particle*,std::set<PHG4Hit*> > _cache_all_truth_hits_g4particle;
   std::map<PHG4Hit*,PHG4Particle*>            _cache_get_primary_particle_g4hit;
