@@ -350,7 +350,7 @@ void CaloEvaluator::fillOutputNtuples(PHCompositeNode *topNode) {
       }
     }
 	
-    float gpoint_data[7] = {_ievent,
+    float gpoint_data[7] = { (float) _ievent,
 			    gvx,
 			    gvy,
 			    gvz,
@@ -436,7 +436,7 @@ void CaloEvaluator::fillOutputNtuples(PHCompositeNode *topNode) {
 	efromtruth     = clustereval->get_energy_contribution(cluster, primary);
       }
       
-      float shower_data[20] = {_ievent,
+      float shower_data[20] = {(float)_ievent,
 			       gparticleID,
 			       gflavor,
 			       gnhits,
@@ -554,7 +554,7 @@ void CaloEvaluator::fillOutputNtuples(PHCompositeNode *topNode) {
 	efromtruth = towereval->get_energy_contribution(tower, primary);
       }
 
-      float tower_data[21] = {_ievent,
+      float tower_data[21] = {(float) _ievent,
 			      towerid,
 			      ieta,
 			      iphi,
@@ -664,7 +664,7 @@ void CaloEvaluator::fillOutputNtuples(PHCompositeNode *topNode) {
 							  primary);
       }
       
-      float cluster_data[20] = {_ievent,
+      float cluster_data[20] = {(float) _ievent,
 				clusterID,
 				ntowers,
 				eta,
