@@ -21,7 +21,8 @@ INCLUDES = \
     -I$(OFFLINE_MAIN)/include \
     -I$(ROOTSYS)/include \
     -I${G4_MAIN}/include \
-    -I${G4_MAIN}/include/Geant4
+    -I${G4_MAIN}/include/Geant4 \
+    -I/opt/sphenix/core/stow/xerces-c-3.1.2/include/
 
 libg4detectors_io_la_LIBADD = \
   -lphool \
@@ -239,7 +240,8 @@ libg4detectors_la_SOURCES = \
   PHG4SpacalPrototypeSubsystem.cc \
   PHG4SpacalPrototypeSubsystem_Dict.cc \
   PHG4CylinderCellTPCReco.cc \
-  PHG4CylinderCellTPCReco_Dict.cc
+  PHG4CylinderCellTPCReco_Dict.cc \
+  PHG4GDMLImportDetector.cc
 
 # Rule for generating table CINT dictionaries.
 %_Dict.cc: %.h %LinkDef.h
