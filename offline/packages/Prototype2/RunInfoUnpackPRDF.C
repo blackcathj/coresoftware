@@ -1,6 +1,7 @@
 #include "RunInfoUnpackPRDF.h"
 
 #include <ffaobjects/EventHeaderv1.h>
+#include <ffaobjects/SyncObjectv1.h>
 #include <Event/Event.h>
 #include <Event/EventTypes.h>
 #include <Event/packetConstants.h>
@@ -11,6 +12,7 @@
 #include <phool/PHCompositeNode.h>
 #include <phool/phool.h>
 #include <phool/getClass.h>
+#include <fun4all/Fun4AllServer.h>
 #include <fun4all/Fun4AllReturnCodes.h>
 #include "PROTOTYPE2_FEM.h"
 #include <iostream>
@@ -66,6 +68,21 @@ RunInfoUnpackPRDF::process_event(PHCompositeNode *topNode)
       if (verbosity)
         {
           eventheader->identify();
+        }
+    }
+  SyncObject *syncobject = findNode::getClass<SyncObject>(topNode, "Sync");
+  if (syncobject)
+    {
+      Fun4AllServer *se = Fun4AllServer::instance();
+
+      syncobject->EventCounter(se->PrdfEvents());
+      syncobject->RunNumber(event->getRunNumber());
+      syncobject->EventNumber(event->getEvtSequence());
+      syncobject->SegmentNumber(se->SegmentNumber());
+
+      if (verbosity)
+        {
+          syncobject->identify();
         }
     }
 
@@ -175,6 +192,13 @@ RunInfoUnpackPRDF::CreateNodeTree(PHCompositeNode *topNode)
   PHObjectNode_t *EventHeaderNode = new PHObjectNode_t(eventheader, "EventHeader", "PHObject"); // contain PHObject
   dst_node->addNode(EventHeaderNode);
 
+  SyncObject *syncobject = findNode::getClass<SyncObject>(topNode, "Sync");
+  if (!syncobject)
+    {
+      syncobject = new SyncObjectv1();
+      PHIODataNode <PHObject> *SyncObjectNode = new PHIODataNode <PHObject>(syncobject, "Sync", "PHObject"); // contains PHObject
+      dst_node->addNode(SyncObjectNode);
+    }
 }
 
 //___________________________________
