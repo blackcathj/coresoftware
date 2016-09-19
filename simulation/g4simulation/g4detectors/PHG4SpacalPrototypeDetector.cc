@@ -607,6 +607,31 @@ PHG4SpacalPrototypeDetector::Construct_Fiber(const G4double length,
   G4Material * core_mat = G4Material::GetMaterial(_geom->get_fiber_core_mat());
   assert(core_mat);
 
+  cout <<"PHG4SpacalPrototypeDetector::Construct_Fiber - core material dump:"
+      <<endl;
+  cout <<core_mat;
+  if (core_mat->GetIonisation())
+    {
+
+      cout <<"Old Birk constant = "<< core_mat->GetIonisation()->GetBirksConstant() <<endl;
+
+//      Birks' Coefficient of the AHCAL Scintillator, Alexander Tadday,University of Heidelberg
+      // measrued value
+//      core_mat->GetIonisation()->SetBirksConstant(0.0151*cm/MeV);
+      // expected value for default Geant4 stepping settings of range 1mm and alpha of 0.2.
+      core_mat->GetIonisation()->SetBirksConstant(0.018*cm/MeV);
+
+      cout <<"PHG4SpacalPrototypeDetector::Construct_Fiber - override Birk's Constant!! ";
+      cout <<"New Birk constant = "<< core_mat->GetIonisation()->GetBirksConstant() <<endl;
+
+    }
+  else
+    {
+      cout <<"Missing G4IonisParamMat!!"<<endl;
+    }
+
+
+
   G4LogicalVolume * core_logic = new G4LogicalVolume(core_solid, core_mat,
       G4String(G4String(GetName() + string("_fiber_core") + id)), 0, 0,
       fiber_core_step_limits);
