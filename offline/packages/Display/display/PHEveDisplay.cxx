@@ -7,44 +7,48 @@
         \date    $Date: 07/26/2016
 */
 
-// STL and BOOST includes
-#include <iostream>
-#include <string>
-#include <stdexcept>
-#include <boost/shared_ptr.hpp>
+// local include
+#include "PHEveDisplay.h"
+
+// sPHENIX include
+#include <PHBFieldMap/PHBFieldMap.hh>
 #include <fun4all/Fun4AllServer.h>
 #include <phool/PHCompositeNode.h>
 #include <phool/phool.h>
 #include <phgeom/PHGeomUtility.h>
 
+// STL and BOOST includes
+#include <iostream>
+#include <string>
+#include <stdexcept>
+#include <boost/shared_ptr.hpp>
+
 // EVE class includes
-#include "TEveManager.h"
-#include "TEveVSDStructs.h"
-#include "TEveGeoNode.h"
-#include "TEveVector.h"
-#include "TEveTrack.h"
-#include "TEveTrackPropagator.h"
-#include "TEvePointSet.h"
-#include "TEveWindowManager.h"
-#include "TEveWindow.h"
-#include "TEveViewer.h"
-#include "TEveBrowser.h"
+#include <TEveManager.h>
+#include <TEveVSDStructs.h>
+#include <TEveGeoNode.h>
+#include <TEveVector.h>
+#include <TEveTrack.h>
+#include <TEveTrackPropagator.h>
+#include <TEvePointSet.h>
+#include <TEveWindowManager.h>
+#include <TEveWindow.h>
+#include <TEveViewer.h>
+#include <TEveBrowser.h>
 
-#include "TGeoManager.h"
-#include "TGeoNode.h"
-#include "TGeoVolume.h"
-#include "TGeoMedium.h"
+#include <TGeoManager.h>
+#include <TGeoNode.h>
+#include <TGeoVolume.h>
+#include <TGeoMedium.h>
 
-#include "TGLViewer.h"
-#include "TGPack.h"
+#include <TGLViewer.h>
+#include <TGPack.h>
 
-#include "TSystem.h"
-#include "TStyle.h"
-#include "TFile.h"
-#include "TMath.h"
+#include <TSystem.h>
+#include <TStyle.h>
+#include <TFile.h>
+#include <TMath.h>
 
-#include "PHBFieldMap.hh"
-#include "PHEveDisplay.h"
 
 PHEveDisplay::PHEveDisplay(int w,
 			   int h,
