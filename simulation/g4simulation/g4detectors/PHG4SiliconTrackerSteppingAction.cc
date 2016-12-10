@@ -47,11 +47,7 @@ PHG4SiliconTrackerSteppingAction::PHG4SiliconTrackerSteppingAction(PHG4SiliconTr
 
 PHG4SiliconTrackerSteppingAction::~PHG4SiliconTrackerSteppingAction()
 {
-  // if the last hit was a zero energie deposit hit, it is just reset
-  // and the memory is still allocated, so we need to delete it here
-  // if the last hit was saved, hit is a NULL pointer which are
-  // legal to delete (it results in a no operation)
-  delete hit;
+//  delete hit;
 }
 
 //____________________________________________________________________________..
