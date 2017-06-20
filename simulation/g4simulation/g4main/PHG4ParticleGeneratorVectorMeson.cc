@@ -339,7 +339,7 @@ PHG4ParticleGeneratorVectorMeson::process_event(PHCompositeNode *topNode)
   TLorentzVector vm;
   vm.SetPtEtaPhiM(pt,eta,phi,mnow);
 
-  for (std::map<unsigned int, std::string>::iterator it=decay1_names.begin(); it !=decay1_names.end() ; it++){
+  for (std::map<unsigned int, std::string>::iterator it=decay1_names.begin(); it !=decay1_names.end() ; ++it){
 
     unsigned int decay_id = it->first;
     std::string decay1_name = it->second;
