@@ -90,7 +90,7 @@ int Fun4AllHepMCPileupInputManager::run(const int nevents)
 
     if (Verbosity() >= VERBOSITY_SOME)
     {
-      cout << "Fun4AllHepMCPileupInputManager::run:first event:  - ";
+      cout << "Fun4AllHepMCPileupInputManager::"<<Name()<<":run:first event:  - ";
       cout << " _ave_coll_per_crossing = " << _ave_coll_per_crossing;
       cout << " _min_crossing = " << _min_crossing;
       cout << " _max_crossing = " << _max_crossing;
@@ -120,7 +120,7 @@ int Fun4AllHepMCPileupInputManager::run(const int nevents)
           {
             if (verbosity > 0)
             {
-              cout << Name() << ": No Input file open" << endl;
+              cout <<"Fun4AllHepMCPileupInputManager:"<< Name() << ": No Input file open" << endl;
             }
             return -1;
           }
@@ -128,7 +128,7 @@ int Fun4AllHepMCPileupInputManager::run(const int nevents)
           {
             if (OpenNextFile())
             {
-              cout << Name() << ": No Input file from filelist opened" << endl;
+              cout <<"Fun4AllHepMCPileupInputManager:"<< Name() << ": No Input file from filelist opened" << endl;
               return -1;
             }
           }
@@ -156,7 +156,7 @@ int Fun4AllHepMCPileupInputManager::run(const int nevents)
         {
           if (verbosity > 1)
           {
-            cout << "error type: " << ascii_in->error_type()
+            cout <<"Fun4AllHepMCPileupInputManager:"<< Name() << ":error type: " << ascii_in->error_type()
                  << ", rdstate: " << ascii_in->rdstate() << endl;
           }
           fileclose();
@@ -166,7 +166,7 @@ int Fun4AllHepMCPileupInputManager::run(const int nevents)
           mySyncManager->CurrentEvent(evt->event_number());
           if (verbosity > 0)
           {
-            cout << "hepmc evt no: " << evt->event_number() << endl;
+            cout <<"Fun4AllHepMCPileupInputManager:"<< Name() << ": read hepmc evt no: " << evt->event_number() << endl;
           }
         }
         events_total++;

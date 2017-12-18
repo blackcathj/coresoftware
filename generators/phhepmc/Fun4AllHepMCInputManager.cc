@@ -86,12 +86,12 @@ int Fun4AllHepMCInputManager::fileopen(const string &filenam)
 {
   if (!mySyncManager)
   {
-    cout << "Call fileopen only after you registered your Input Manager " << Name() << " with the Fun4AllServer" << endl;
+    cout <<"Fun4AllHepMCInputManager::"<<Name() << ": Call fileopen only after you registered your Input Manager " << Name() << " with the Fun4AllServer" << endl;
     exit(1);
   }
   if (isopen)
   {
-    cout << "Closing currently open file "
+    cout <<"Fun4AllHepMCInputManager::"<<Name() << "Closing currently open file "
          << filename
          << " and opening " << filenam << endl;
     fileclose();
@@ -101,7 +101,7 @@ int Fun4AllHepMCInputManager::fileopen(const string &filenam)
   string fname(frog.location(filename.c_str()));
   if (verbosity > 0)
   {
-    cout << ThisName << ": opening file " << fname << endl;
+    cout <<"Fun4AllHepMCInputManager::"<<Name() << ": opening file " << fname << endl;
   }
 
   if (readoscar)
@@ -246,7 +246,7 @@ int Fun4AllHepMCInputManager::fileclose()
 {
   if (!isopen)
   {
-    cout << Name() << ": fileclose: No Input file open" << endl;
+    cout <<"Fun4AllHepMCInputManager::"<<Name() << ": fileclose: No Input file open" << endl;
     return -1;
   }
   if (readoscar)
@@ -289,11 +289,11 @@ int Fun4AllHepMCInputManager::OpenNextFile()
     list<string>::const_iterator iter = filelist.begin();
     if (verbosity)
     {
-      cout << PHWHERE << " opening next file: " << *iter << endl;
+      cout <<"Fun4AllHepMCInputManager::"<<Name() << " opening next file: " << *iter << endl;
     }
     if (fileopen((*iter).c_str()))
     {
-      cout << PHWHERE << " could not open file: " << *iter << endl;
+      cout <<"Fun4AllHepMCInputManager::"<<Name() << " could not open file: " << *iter << endl;
       filelist.pop_front();
     }
     else
@@ -311,25 +311,32 @@ int Fun4AllHepMCInputManager::PushBackEvents(const int i)
   // A special case is when the synchronization fails and we need to only push back a single
   // event. In this case we save the evt pointer as save_evt which is used in the run method
   // instead of getting the next event.
+
+
+  if (verbosity > 3)
+  {
+    cout <<"Fun4AllHepMCInputManager::"<<Name()<< " - PushBackEvents with i = " << i << endl;
+  }
+
   if (i > 0)
   {
     if (i == 1 && evt)  // check on evt pointer makes sure it is not done from the cmd line
     {
       if (verbosity > 3)
       {
-        cout << ThisName << ": pushing back evt no " << evt->event_number() << endl;
+        cout <<"Fun4AllHepMCInputManager::"<<Name() << ": pushing back evt no " << evt->event_number() << endl;
       }
       save_evt = evt;
       return 0;
     }
-    cout << PHWHERE << ThisName
+    cout <<"Fun4AllHepMCInputManager::"<<Name()
          << " Fun4AllHepMCInputManager cannot pop back events into file"
          << endl;
     return -1;
   }
   if (!isopen)
   {
-    cout << PHWHERE << ThisName
+    cout <<"Fun4AllHepMCInputManager::"<<Name()
          << " no file opened yet" << endl;
     return -1;
   }
@@ -343,8 +350,8 @@ int Fun4AllHepMCInputManager::PushBackEvents(const int i)
     evt = ascii_in->read_next_event();
     if (!evt)
     {
-      cout << "Error after skipping " << i - nevents << endl;
-      cout << "error type: " << ascii_in->error_type()
+      cout <<"Fun4AllHepMCInputManager::"<<Name() << "Error after skipping " << i - nevents << endl;
+      cout <<"Fun4AllHepMCInputManager::"<<Name() << "error type: " << ascii_in->error_type()
            << ", rdstate: " << ascii_in->rdstate() << endl;
       errorflag = -1;
       fileclose();
@@ -353,7 +360,7 @@ int Fun4AllHepMCInputManager::PushBackEvents(const int i)
     {
       if (verbosity > 3)
       {
-        cout << "Skipping evt no: " << evt->event_number() << endl;
+        cout <<"Fun4AllHepMCInputManager::"<<Name()<< " - Skipping evt no: " << evt->event_number() << endl;
       }
     }
     delete evt;
@@ -375,7 +382,7 @@ Fun4AllHepMCInputManager::ConvertFromOscar()
   //use PHENIX unit
   evt = new HepMC::GenEvent(HepMC::Units::GEV, HepMC::Units::CM);
 
-  if (verbosity > 1) cout << "Reading Oscar Event " << events_total << endl;
+  if (verbosity > 1) cout <<"Fun4AllHepMCInputManager::"<<Name() << " Reading Oscar Event " << events_total << endl;
   //Grab New Event From Oscar
   string theLine;
   vector<vector<double> > theEventVec;
