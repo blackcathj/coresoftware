@@ -8,6 +8,7 @@
 #include <phool/PHObject.h>
 #include <phparameter/PHParameters.h>
 #include <string>
+#include <phool/PHTimer.h>
 
 class RawTowerContainer;
 
@@ -15,6 +16,7 @@ class CaloCalibration : public SubsysReco
 {
  public:
   CaloCalibration(const std::string &name);
+  virtual ~CaloCalibration();
 
   int Init(PHCompositeNode *topNode);
 
@@ -105,6 +107,9 @@ class CaloCalibration : public SubsysReco
   PHParameters _calib_params;
 
   FitMethodType _fit_type;
+
+  PHTimer * _fit_per_chan;
+  PHTimer * _fit_total;
 
   //! load the default parameter to param
   void

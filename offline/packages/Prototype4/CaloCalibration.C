@@ -28,8 +28,27 @@ CaloCalibration::CaloCalibration(const std::string &name)
   , _raw_tower_node_prefix("RAW")
   , _calib_params(name)
   , _fit_type(kPowerLawDoubleExpWithGlobalFitConstraint)
+  , _fit_per_chan(new PHTimer(name + "_per_chan"))
+  , _fit_total(new PHTimer(name + "_fit_total"))
 {
   SetDefaultParameters(_calib_params);
+
+  _fit_per_chan->stop();
+  _fit_total->stop();
+}
+
+CaloCalibration::~CaloCalibration()
+{
+  if (_fit_per_chan)
+  {
+    delete _fit_per_chan;
+    _fit_per_chan = nullptr;
+  }
+  if (_fit_total)
+  {
+    delete _fit_total;
+    _fit_total = nullptr;
+  }
 }
 
 //____________________________________
@@ -56,16 +75,20 @@ int CaloCalibration::InitRun(PHCompositeNode *topNode)
 //____________________________________
 int CaloCalibration::process_event(PHCompositeNode *topNode)
 {
-  if (verbosity)
+  if (verbosity >= 2)
   {
     std::cout << Name() << "::" << detector << "::" << __PRETTY_FUNCTION__
               << "Process event entered" << std::endl;
   }
 
+  if (Verbosity())
+  {
+    _fit_total->restart();
+  }
   map<int, double> parameters_constraints;
   if (_fit_type == kPowerLawDoubleExpWithGlobalFitConstraint and _raw_towers->size() > 1)
   {
-    if (verbosity)
+    if (verbosity >= 3)
     {
       std::cout << Name() << "::" << detector << "::" << __PRETTY_FUNCTION__
                 << "Extract global fit parameter for constraining individual fits" << std::endl;
@@ -122,7 +145,7 @@ int CaloCalibration::process_event(PHCompositeNode *topNode)
       map<int, double> parameters_io;
 
       PROTOTYPE4_FEM::SampleFit_PowerLawDoubleExp(vec_signal_samples, peak,
-                                                  peak_sample, pedstal, parameters_io, verbosity);
+                                                  peak_sample, pedstal, parameters_io, verbosity > 3 ? (verbosity - 3) : 0);
       //    std::map<int, double> &parameters_io,  //! IO for fullset of parameters. If a parameter exist and not an NAN, the fit parameter will be fixed to that value. The order of the parameters are
       //    ("Amplitude", "Sample Start", "Power", "Peak Time 1", "Pedestal", "Amplitude ratio", "Peak Time 2")
 
@@ -164,6 +187,7 @@ int CaloCalibration::process_event(PHCompositeNode *topNode)
   RawTowerContainer::Iterator rtiter;
   for (rtiter = begin_end.first; rtiter != begin_end.second; ++rtiter)
   {
+
     RawTowerDefs::keytype key = rtiter->first;
     RawTower_Prototype4 *raw_tower =
         dynamic_cast<RawTower_Prototype4 *>(rtiter->second);
@@ -185,6 +209,11 @@ int CaloCalibration::process_event(PHCompositeNode *topNode)
       calibration_const *= _calib_params.get_double_param(calib_const_name);
     }
 
+    if (Verbosity())
+    {
+      _fit_per_chan->restart();
+    }
+
     vector<double> vec_signal_samples;
     for (int i = 0; i < RawTower_Prototype4::NSAMPLES; i++)
     {
@@ -200,12 +229,12 @@ int CaloCalibration::process_event(PHCompositeNode *topNode)
     {
     case kPowerLawExp:
       PROTOTYPE4_FEM::SampleFit_PowerLawExp(vec_signal_samples, peak,
-                                            peak_sample, pedstal, verbosity);
+                                            peak_sample, pedstal, verbosity > 3 ? (verbosity - 3) : 0);
       break;
 
     case kPeakSample:
       PROTOTYPE4_FEM::SampleFit_PeakSample(vec_signal_samples, peak,
-                                           peak_sample, pedstal, verbosity);
+                                           peak_sample, pedstal, verbosity > 3 ? (verbosity - 3) : 0);
       break;
 
     case kPowerLawDoubleExp:
@@ -213,7 +242,7 @@ int CaloCalibration::process_event(PHCompositeNode *topNode)
       map<int, double> parameters_io;
 
       PROTOTYPE4_FEM::SampleFit_PowerLawDoubleExp(vec_signal_samples, peak,
-                                                  peak_sample, pedstal, parameters_io, verbosity);
+                                                  peak_sample, pedstal, parameters_io, verbosity > 3 ? (verbosity - 3) : 0);
     }
     break;
 
@@ -222,13 +251,18 @@ int CaloCalibration::process_event(PHCompositeNode *topNode)
       map<int, double> parameters_io(parameters_constraints);
 
       PROTOTYPE4_FEM::SampleFit_PowerLawDoubleExp(vec_signal_samples, peak,
-                                                  peak_sample, pedstal, parameters_io, verbosity);
+                                                  peak_sample, pedstal, parameters_io, verbosity > 3 ? (verbosity - 3) : 0);
     }
     break;
     default:
       cout << __PRETTY_FUNCTION__ << " - FATAL error - unkown fit type " << _fit_type << endl;
       exit(3);
       break;
+    }
+
+    if (Verbosity())
+    {
+      _fit_per_chan->stop();
     }
 
     // store the result - raw_tower
@@ -239,7 +273,7 @@ int CaloCalibration::process_event(PHCompositeNode *topNode)
       raw_tower->set_energy(peak);
       raw_tower->set_time(peak_sample);
 
-      if (verbosity)
+      if (verbosity >= 3)
       {
         raw_tower->identify();
       }
@@ -259,7 +293,12 @@ int CaloCalibration::process_event(PHCompositeNode *topNode)
 
   }  //  for (rtiter = begin_end.first; rtiter != begin_end.second; ++rtiter)
 
-  if (verbosity)
+  if (Verbosity())
+  {
+    _fit_total->stop();
+  }
+
+  if (verbosity >= 2)
   {
     std::cout << Name() << "::" << detector << "::" << __PRETTY_FUNCTION__
               << "input sum energy = " << _raw_towers->getTotalEdep()
@@ -333,6 +372,12 @@ void CaloCalibration::CreateNodeTree(PHCompositeNode *topNode)
 //___________________________________
 int CaloCalibration::End(PHCompositeNode *topNode)
 {
+  if (verbosity)
+  {
+    _fit_total->print_stat();
+    _fit_per_chan->print_stat();
+  }
+
   return Fun4AllReturnCodes::EVENT_OK;
 }
 
