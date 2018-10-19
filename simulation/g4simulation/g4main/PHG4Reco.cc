@@ -74,6 +74,7 @@
 #include <Geant4/globals.hh>
 
 // physics lists
+#include <Geant4/G4NeutronTrackingCut.hh>
 #include <Geant4/FTFP_BERT.hh>
 #include <Geant4/LBE.hh>
 #include <Geant4/QGSP_BERT.hh>
@@ -246,6 +247,19 @@ int PHG4Reco::Init(PHCompositeNode *topNode)
 // initialize cuts so we can ask the world region for it's default
 // cuts to propagate them to other regions in DefineRegions()
   myphysicslist->SetCutsWithDefault();
+
+
+
+  cout << "==================================================================================" << endl;
+  cout << "Special debug feature: ncut -> SetKineticEnergyLimit(10 * keV)" << endl;
+  cout << "==================================================================================" << endl;
+  G4NeutronTrackingCut * ncut =  new G4NeutronTrackingCut();
+  ncut -> SetTimeLimit(2000 * s);
+  ncut -> SetKineticEnergyLimit(10 * keV);
+  myphysicslist->RegisterPhysics(ncut);
+
+
+
   runManager_->SetUserInitialization(myphysicslist);
 
   DefineRegions();
