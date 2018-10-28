@@ -226,8 +226,8 @@ int Fun4AllHepMCSingleTrackInputManager::run(const int nevents)
         if (Verbosity())
         {
           cout << "Fun4AllHepMCSingleTrackInputManager::run::" << Name() << ":loaded new HepMC event:";
-          evt->print();
           cout << endl;
+          evt->print();
         }
 
         currentParticle = evt->particles_begin();
@@ -239,7 +239,7 @@ int Fun4AllHepMCSingleTrackInputManager::run(const int nevents)
     {
       if (Verbosity())
       {
-        cout << "Fun4AllHepMCSingleTrackInputManager::run::" << Name() << ": end of particle list, load new" << endl;
+        cout << "Fun4AllHepMCSingleTrackInputManager::run::" << Name() << ": end of particle list, will load new ..." << endl;
       }
 
       delete evt;
@@ -251,7 +251,7 @@ int Fun4AllHepMCSingleTrackInputManager::run(const int nevents)
     {
       if (Verbosity())
       {
-        cout << "Fun4AllHepMCSingleTrackInputManager::run::" << Name() << ": none final state particle, will load new";
+        cout << "Fun4AllHepMCSingleTrackInputManager::run::" << Name() << ": non-final state particle, will load new: ";
         (*currentParticle)->print();
         cout << endl;
       }
@@ -264,7 +264,7 @@ int Fun4AllHepMCSingleTrackInputManager::run(const int nevents)
     {
       if (Verbosity())
       {
-        cout << "Fun4AllHepMCSingleTrackInputManager::run::" << Name() << ": found final state particle, will use it";
+        cout << "Fun4AllHepMCSingleTrackInputManager::run::" << Name() << ": found final state particle, will use it: ";
         (*currentParticle)->print();
         cout << endl;
       }
