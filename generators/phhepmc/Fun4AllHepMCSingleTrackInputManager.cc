@@ -272,6 +272,7 @@ int Fun4AllHepMCSingleTrackInputManager::run(const int nevents)
       //      Build new event with single track
       HepMC::GenEvent *single_tr_evt = new HepMC::GenEvent(*evt);
 
+      int count_matched = 0;
       for (HepMC::GenEvent::particle_iterator p_iter = single_tr_evt->particles_begin();
            p_iter != single_tr_evt->particles_end();
            ++p_iter)
@@ -280,7 +281,12 @@ int Fun4AllHepMCSingleTrackInputManager::run(const int nevents)
         {
           (*p_iter)->set_status(104);  // disable this particle
         }
+        else
+        {
+          ++count_matched;
+        }
       }
+      assert(count_matched == 1);
 
       ++currentParticle;
 
