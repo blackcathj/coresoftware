@@ -16,6 +16,7 @@ lib_LTLIBRARIES = \
 
 pkginclude_HEADERS = \
   Fun4AllHepMCInputManager.h \
+  Fun4AllHepMCSingleTrackInputManager.h \
   Fun4AllHepMCPileupInputManager.h \
   Fun4AllHepMCOutputManager.h \
   Fun4AllOscarInputManager.h \
@@ -46,6 +47,8 @@ libphhepmc_la_LIBADD = \
 libphhepmc_la_SOURCES = \
   Fun4AllHepMCInputManager.cc \
   Fun4AllHepMCInputManager_Dict.C \
+  Fun4AllHepMCSingleTrackInputManager.cc \
+  Fun4AllHepMCSingleTrackInputManager_Dict.C \
   Fun4AllHepMCPileupInputManager.cc \
   Fun4AllHepMCPileupInputManager_Dict.C \
   Fun4AllHepMCOutputManager.cc \
