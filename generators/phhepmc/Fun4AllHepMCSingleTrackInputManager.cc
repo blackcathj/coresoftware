@@ -277,7 +277,7 @@ int Fun4AllHepMCSingleTrackInputManager::run(const int nevents)
            p_iter != single_tr_evt->particles_end();
            ++p_iter)
       {
-        if (*p_iter != *currentParticle)
+        if ((*p_iter)-> barcode() != (*currentParticle)-> barcode() )
         {
           (*p_iter)->set_status(104);  // disable this particle
         }
