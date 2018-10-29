@@ -109,7 +109,7 @@ void PHG4GDMLDetector::Construct(G4LogicalVolume* logicWorld)
                     vol,
                     G4String(GetName().c_str()),
                     logicWorld, false, 0, OverlapCheck());
-  SetDisplayProperty(vol);
+//  SetDisplayProperty(vol);
 }
 
 void PHG4GDMLDetector::SetDisplayProperty(G4AssemblyVolume* av)
