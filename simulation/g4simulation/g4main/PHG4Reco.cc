@@ -250,13 +250,13 @@ int PHG4Reco::Init(PHCompositeNode *topNode)
 
 
 
-  cout << "==================================================================================" << endl;
-  cout << "Special debug feature: ncut -> SetKineticEnergyLimit(10 * keV)" << endl;
-  cout << "==================================================================================" << endl;
-  G4NeutronTrackingCut * ncut =  new G4NeutronTrackingCut();
-  ncut -> SetTimeLimit(2000 * s);
-  ncut -> SetKineticEnergyLimit(10 * keV);
-  myphysicslist->RegisterPhysics(ncut);
+//  cout << "==================================================================================" << endl;
+//  cout << "Special debug feature: ncut -> SetKineticEnergyLimit(10 * keV);" << endl;
+//  cout << "==================================================================================" << endl;
+//  G4NeutronTrackingCut * ncut =  new G4NeutronTrackingCut();
+//  ncut -> SetTimeLimit(10000 * s);
+//  ncut -> SetKineticEnergyLimit(10 * keV);
+//  myphysicslist->RegisterPhysics(ncut);
 
 
 
