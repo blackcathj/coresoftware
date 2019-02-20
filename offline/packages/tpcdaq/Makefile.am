@@ -9,51 +9,56 @@ AM_CPPFLAGS = \
   -I`root-config --incdir`
 
 lib_LTLIBRARIES = \
-   libtpcdaq.la \
-   libtpcdaq_io.la
+   libtpcdaq_io.la \
+   libtpcdaq.la 
 
 AM_CXXFLAGS = -Werror
 
 libtpcdaq_la_LDFLAGS = \
   -L$(libdir) \
-  -L$(OFFLINE_MAIN)/lib
-
-libtpcdaq_la_LIBADD = \
+  -L$(OFFLINE_MAIN)/lib \
   -lfun4all \
   -lg4dst \
   -lphool
-
-libtpcdaq_io_la_LIBADD = \
+  
+libtpcdaq_io_la_LDFLAGS = \
+  -L$(libdir) \
+  -L$(OFFLINE_MAIN)/lib \
   -lphool
+
+libtpcdaq_la_LIBADD = \
+	libtpcdaq_io.la
 
 pkginclude_HEADERS = \
   TPCDaqDefs.h
 
 ROOTDICTS = \
   TPCFEETestRecov1_Dict.cc
+  
 if MAKEROOT6
   pcmdir = $(libdir)
   nobase_dist_pcm_DATA = \
     TPCFEETestRecov1_Dict_rdict.pcm
 else
   ROOT5_IO_DICTS = \
-    MvtxDefs_Dict.cc
+    TPCDaqDefs_Dict.cc
 
   ROOT5_DICTS = \
     TPCIntegratedCharge_Dict.cc \
-    TPCDataStreamEmulator_Dict.cc
+    TPCDataStreamEmulator_Dict.cc \
+    TPCFEETestRecov1_Dict.cc
 endif
 
 libtpcdaq_la_SOURCES = \
   $(ROOT5_DICTS) \
   TPCIntegratedCharge.cc \
   TPCDataStreamEmulator.cc \
-  TPCDaqDefs.cc \
-  TPCDaqDefs_Dict.cc
-
+  TPCFEETestRecov1.cc 
+  
 libtpcdaq_io_la_SOURCES = \
-  $(ROOTDICTS) \
-  TPCFEETestRecov1.cc
+  $(ROOT5_IO_DICTS) \
+  TPCDaqDefs.cc
+  
 
 # Rule for generating table CINT dictionaries.
 %_Dict.cc: %.h %LinkDef.h
