@@ -16,12 +16,12 @@
 #include <g4detectors/PHG4CellContainer.h>
 #include <g4detectors/PHG4CylinderCellGeom.h>
 #include <g4detectors/PHG4CylinderCellGeomContainer.h>
-#include <trackbase_historic/SvtxHit.h>
-#include <trackbase_historic/SvtxHitMap.h>
 #include <g4main/PHG4Hit.h>
 #include <g4main/PHG4HitContainer.h>
 #include <g4main/PHG4Particle.h>
 #include <g4main/PHG4TruthInfoContainer.h>
+#include <trackbase_historic/SvtxHit.h>
+#include <trackbase_historic/SvtxHitMap.h>
 
 #include <fun4all/Fun4AllHistoManager.h>
 #include <fun4all/Fun4AllReturnCodes.h>
@@ -57,6 +57,7 @@
 
 using namespace std;
 using namespace CLHEP;
+using namespace TPCDaqDefs::sPHENIX;
 
 TPCDataStreamEmulator::TPCDataStreamEmulator(
     unsigned int minLayer,
@@ -71,6 +72,7 @@ TPCDataStreamEmulator::TPCDataStreamEmulator(
   , m_vertexZAcceptanceCut(10)
   , m_etaAcceptanceCut(1.1)
   , m_hDataSize(nullptr)
+  , m_hSectorDataSize(nullptr)
   , m_hWavelet(nullptr)
   , m_hNChEta(nullptr)
   , m_hLayerWaveletSize(nullptr)
@@ -177,8 +179,13 @@ int TPCDataStreamEmulator::InitRun(PHCompositeNode* topNode)
 
   hm->registerHisto(m_hDataSize =
                         new TH1D("hDataSize",  //
-                                 "TPC Data Size per Event;Data size [Byte];Count",
+                                 "TPC Data Size per Event;Data size per Event [Byte];Count",
                                  10000, 0, 20e6));
+
+  hm->registerHisto(m_hSectorDataSize =
+                        new TH1D("hSectorDataSize",  //
+                                 "TPC Data Size per Event per Sector;Data size per Event per Sector [Byte];Count",
+                                 10000, 0, 1e6));
 
   hm->registerHisto(m_hWavelet =
                         new TH1D("hWavelet",  //
@@ -244,10 +251,10 @@ int TPCDataStreamEmulator::process_event(PHCompositeNode* topNode)
   assert(h_norm);
   h_norm->Fill("Event count", 1);
 
-  PHG4HitContainer* g4hit = findNode::getClass<PHG4HitContainer>(topNode, "G4HIT_SVTX");
+  PHG4HitContainer* g4hit = findNode::getClass<PHG4HitContainer>(topNode, "G4HIT_TPC");
   if (!g4hit)
   {
-    cout << "TPCDataStreamEmulator::process_event - Could not locate g4 hit node G4HIT_SVTX" << endl;
+    cout << "TPCDataStreamEmulator::process_event - Could not locate g4 hit node G4HIT_TPC" << endl;
     return Fun4AllReturnCodes::ABORTRUN;
   }
 
@@ -258,11 +265,11 @@ int TPCDataStreamEmulator::process_event(PHCompositeNode* topNode)
     return Fun4AllReturnCodes::ABORTRUN;
   }
 
-  PHG4CellContainer* cells = findNode::getClass<PHG4CellContainer>(topNode, "G4CELL_SVTX");
+  PHG4CellContainer* cells = findNode::getClass<PHG4CellContainer>(topNode, "G4CELL_TPC");
   if (!cells)
   {
     cout << "TPCDataStreamEmulator::process_event - could not locate cell node "
-         << "G4CELL_SVTX" << endl;
+         << "G4CELL_TPC" << endl;
     exit(1);
   }
 
@@ -319,7 +326,7 @@ int TPCDataStreamEmulator::process_event(PHCompositeNode* topNode)
     {
       TVector3 pvec(p->get_px(), p->get_py(), p->get_pz());
 
-      if (pvec.Perp2()>0)
+      if (pvec.Perp2() > 0)
       {
         assert(m_hNChEta);
         m_hNChEta->Fill(pvec.PseudoRapidity());
@@ -343,8 +350,8 @@ int TPCDataStreamEmulator::process_event(PHCompositeNode* topNode)
 
   // prepreare stat. storage
   int nZBins = 0;
-  vector<array<vector<int>, 2> > layerChanHit(m_maxLayer + 1);
-  vector<array<vector<int>, 2> > layerChanDataSize(m_maxLayer + 1);
+  vector<array<vector<int>, 2>> layerChanHit(m_maxLayer + 1);
+  vector<array<vector<int>, 2>> layerChanDataSize(m_maxLayer + 1);
   int nWavelet = 0;
   int sumDataSize = 0;
   for (int layer = m_minLayer; layer <= m_maxLayer; ++layer)
@@ -501,6 +508,7 @@ int TPCDataStreamEmulator::process_event(PHCompositeNode* topNode)
   }
 
   // statistics
+  vector<vector<int>> sectorDataSize(2, vector<int>(kNSector, 0));
   for (int layer = m_minLayer; layer <= m_maxLayer; ++layer)
   {
     for (unsigned int side = 0; side < 2; ++side)
@@ -531,19 +539,36 @@ int TPCDataStreamEmulator::process_event(PHCompositeNode* topNode)
       assert(m_hLayerSumHit);
       m_hLayerSumHit->Fill(layer, sumHit);
 
+      int channel = 0;
+      const int nChannelPerSector = layerChanDataSize[layer][side].size() / kNSector;
       double sumData = 0;
       for (const int& data : layerChanDataSize[layer][side])
       {
         sumData += data;
 
+        const unsigned int sector = channel / nChannelPerSector;
+        assert(sector < kNSector);
+        sectorDataSize[side][sector] += data;
+
         assert(m_hLayerDataSize);
         m_hLayerDataSize->Fill(layer, data);
+
+        channel++;
       }
       assert(m_hLayerSumDataSize);
       m_hLayerSumDataSize->Fill(layer, sumData);
     }  //    for (unsigned int side = 0; side < 2; ++side)
 
   }  //  for (unsigned int layer = m_minLayer; layer <= m_maxLayer; ++layer)
+
+  assert(m_hSectorDataSize);
+  for (unsigned int side = 0; side < 2; ++side)
+  {
+    for (const int& sector : sectorDataSize[side])
+    {
+      m_hSectorDataSize->Fill(sector);
+    }
+  }
 
   assert(m_hWavelet);
   m_hWavelet->Fill(nWavelet);

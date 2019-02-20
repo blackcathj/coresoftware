@@ -12,6 +12,11 @@ class TPaveText;
 
 namespace TPCDaqDefs
 {
+namespace sPHENIX
+{
+static const unsigned int kNSector = 12;
+}
+
 //! TPC v1 FEE test stand decoder
 namespace FEEv1
 {
@@ -26,13 +31,14 @@ std::pair<int, int> SAMPAChan2PadXY(uint32_t fee_channel);
 
 class SampleFit_PowerLawDoubleExp_PDFMaker
 {
-public:
+ public:
   SampleFit_PowerLawDoubleExp_PDFMaker();
   ~SampleFit_PowerLawDoubleExp_PDFMaker();
-  void MakeSectionPage(const std::string & title);
-private:
-  TCanvas * m_canvas;
-  TPaveText * m_pavedtext;
+  void MakeSectionPage(const std::string &title);
+
+ private:
+  TCanvas *m_canvas;
+  TPaveText *m_pavedtext;
 };
 
 //! Power law double exp fit
