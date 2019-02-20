@@ -146,17 +146,17 @@ int TPCIntegratedCharge::process_event(PHCompositeNode* topNode)
   TH1D* h_norm = dynamic_cast<TH1D*>(hm->getHisto("hNormalization"));
   assert(h_norm);
 
-  PHG4HitContainer* g4hit = findNode::getClass<PHG4HitContainer>(topNode, "G4HIT_SVTX");
+  PHG4HitContainer* g4hit = findNode::getClass<PHG4HitContainer>(topNode, "G4HIT_TPC");
   if (!g4hit)
   {
-    cout << "TPCIntegratedCharge::process_event - Could not locate g4 hit node G4HIT_SVTX" << endl;
+    cout << "TPCIntegratedCharge::process_event - Could not locate g4 hit node G4HIT_TPC" << endl;
     exit(1);
   }
-  PHG4CellContainer* cells = findNode::getClass<PHG4CellContainer>(topNode, "G4CELL_SVTX");
+  PHG4CellContainer* cells = findNode::getClass<PHG4CellContainer>(topNode, "G4CELL_TPC");
   if (!cells)
   {
     cout << "TPCIntegratedCharge::process_event - could not locate cell node "
-         << "G4CELL_SVTX" << endl;
+         << "G4CELL_TPC" << endl;
     exit(1);
   }
 
