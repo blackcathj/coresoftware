@@ -57,6 +57,10 @@ class TPCDataStreamEmulator : public SubsysReco
     m_saveDataStreamFile = saveDataStreamFile;
   }
 
+  void setVertexZAcceptanceCut(const double v) {m_vertexZAcceptanceCut = v;}
+
+  void setEtaAcceptanceCut(const double z) {m_etaAcceptanceCut = z;}
+
  private:
 #ifndef __CINT__
 
