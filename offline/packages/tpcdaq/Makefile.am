@@ -16,18 +16,19 @@ AM_CXXFLAGS = -Werror
 
 libtpcdaq_la_LDFLAGS = \
   -L$(libdir) \
-  -L$(OFFLINE_MAIN)/lib \
-  -lfun4all \
-  -lg4dst \
-  -lphool
+  -L$(OFFLINE_MAIN)/lib 
   
 libtpcdaq_io_la_LDFLAGS = \
   -L$(libdir) \
-  -L$(OFFLINE_MAIN)/lib \
-  -lphool
+  -L$(OFFLINE_MAIN)/lib 
 
 libtpcdaq_la_LIBADD = \
-	libtpcdaq_io.la
+	libtpcdaq_io.la \
+  -lfun4all \
+  -lg4dst 
+	
+libtpcdaq_io_la_LIBADD = \
+  -lphool
 
 pkginclude_HEADERS = \
   TPCDaqDefs.h
