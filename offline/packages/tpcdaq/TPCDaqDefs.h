@@ -14,7 +14,9 @@ namespace TPCDaqDefs
 {
 namespace sPHENIX
 {
-static const unsigned int kNSector = 12;
+  static const unsigned int kNSector = 12;
+  static const unsigned int kNChanPerFEE = 16;
+  static const unsigned int kNLayerPerFEE = 16;
 }
 
 //! TPC v1 FEE test stand decoder

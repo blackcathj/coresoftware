@@ -53,7 +53,10 @@
 #include <cmath>
 #include <iostream>
 #include <limits>
+#include <map>
 #include <stdexcept>
+#include <tuple>
+#include <vector>
 
 using namespace std;
 using namespace CLHEP;
@@ -73,6 +76,7 @@ TPCDataStreamEmulator::TPCDataStreamEmulator(
   , m_etaAcceptanceCut(1.1)
   , m_hDataSize(nullptr)
   , m_hSectorDataSize(nullptr)
+  , m_hFEEDataSize(nullptr)
   , m_hWavelet(nullptr)
   , m_hNChEta(nullptr)
   , m_hLayerWaveletSize(nullptr)
@@ -186,6 +190,11 @@ int TPCDataStreamEmulator::InitRun(PHCompositeNode* topNode)
                         new TH1D("hSectorDataSize",  //
                                  "TPC Data Size per Event per Sector;Data size per Event per Sector [Byte];Count",
                                  10000, 0, 1e6));
+
+  hm->registerHisto(m_hFEEDataSize =
+                        new TH2F("hFEEDataSize",  //
+                                 "TPC Data Size per Event per FEE;Data size per Event per FEE [Byte];Module ID;Count",
+                                 10000, 0, 1e5, 3, -.5, 2.5));
 
   hm->registerHisto(m_hWavelet =
                         new TH1D("hWavelet",  //
@@ -509,6 +518,9 @@ int TPCDataStreamEmulator::process_event(PHCompositeNode* topNode)
 
   // statistics
   vector<vector<int>> sectorDataSize(2, vector<int>(kNSector, 0));
+  typedef tuple<unsigned int, unsigned int, unsigned int> FEE_ID_t;  // module, side, FEE in module
+                                                                     //  typedef unsigned int FEE_ID_t;  // module, side, FEE in module
+  map<FEE_ID_t, int> FEEDataSize;
   for (int layer = m_minLayer; layer <= m_maxLayer; ++layer)
   {
     for (unsigned int side = 0; side < 2; ++side)
@@ -546,9 +558,19 @@ int TPCDataStreamEmulator::process_event(PHCompositeNode* topNode)
       {
         sumData += data;
 
+        // sector statistics
         const unsigned int sector = channel / nChannelPerSector;
         assert(sector < kNSector);
         sectorDataSize[side][sector] += data;
+
+        // FEE statistics
+        const unsigned int module = (layer - m_minLayer) / kNLayerPerFEE;
+        assert(module < 3);
+        const unsigned int FEEinModule = channel / kNChanPerFEE;
+        assert(FEEinModule < kNSector * 12);  //12 FEE per sector
+        FEE_ID_t fee_id(module, side, FEEinModule);
+        //        FEE_ID_t fee_id(module);
+        FEEDataSize[fee_id] = FEEDataSize[fee_id] + data;
 
         assert(m_hLayerDataSize);
         m_hLayerDataSize->Fill(layer, data);
@@ -561,6 +583,7 @@ int TPCDataStreamEmulator::process_event(PHCompositeNode* topNode)
 
   }  //  for (unsigned int layer = m_minLayer; layer <= m_maxLayer; ++layer)
 
+  // sector final statistics
   assert(m_hSectorDataSize);
   for (unsigned int side = 0; side < 2; ++side)
   {
@@ -568,6 +591,16 @@ int TPCDataStreamEmulator::process_event(PHCompositeNode* topNode)
     {
       m_hSectorDataSize->Fill(sector);
     }
+  }
+
+  // FEE final statistics
+  for (const auto& fee : FEEDataSize)
+  {
+    const FEE_ID_t& fee_id = fee.first;
+    const int& data = fee.second;
+    const unsigned int& module = get<0>(fee_id);
+
+    m_hFEEDataSize->Fill(data, module);
   }
 
   assert(m_hWavelet);

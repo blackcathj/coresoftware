@@ -82,6 +82,7 @@ class TPCDataStreamEmulator : public SubsysReco
   // histograms
   TH1 *m_hDataSize;
   TH1 *m_hSectorDataSize;
+  TH2 *m_hFEEDataSize;
   TH1 *m_hWavelet;
   TH1 *m_hNChEta;
   TH2 *m_hLayerWaveletSize;
