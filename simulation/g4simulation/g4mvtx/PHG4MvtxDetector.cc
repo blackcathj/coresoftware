@@ -291,6 +291,17 @@ int PHG4MvtxDetector::ConstructMvtx_Layer(int layer, G4AssemblyVolume* av_ITSUSt
     av_ITSUStave->MakeImprint(trackerenvelope, Tr, 0, OverlapCheck());
   }
 
+  // exclude geometry export to offline
+  {
+    auto u_it  = av_ITSUStave->GetVolumesIterator();
+    auto u_end = av_ITSUStave->GetVolumesIterator() + av_ITSUStave->TotalImprintedVolumes();
+    for (; u_it < u_end; u_it++)
+    {
+      gdml_config->exclude_physical_vol((*u_it));
+    }
+  }
+
+
   if (Verbosity() > 0)
     cout << "This layer has a total of " << N_staves << " staves" << endl;
 
