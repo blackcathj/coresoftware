@@ -18,6 +18,7 @@ class PHCompositeNode;
 class PHG4TpcDisplayAction;
 class PHG4TpcSubsystem;
 class PHParameters;
+class PHG4GDMLConfig;
 
 class PHG4TpcDetector : public PHG4Detector
 {
@@ -51,6 +52,9 @@ class PHG4TpcDetector : public PHG4Detector
   std::set<G4VPhysicalVolume *> activevols;
 
   std::string superdetector;
+
+  PHG4GDMLConfig* gdml_config;
+
 };
 
 #endif

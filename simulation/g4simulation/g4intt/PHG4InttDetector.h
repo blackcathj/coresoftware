@@ -17,6 +17,7 @@ class G4VPhysicalVolume;
 class PHG4InttDisplayAction;
 class PHG4InttSubsystem;
 class PHParametersContainer;
+class PHG4GDMLConfig;
 
 class PHG4InttDetector : public PHG4Detector
 {
@@ -77,6 +78,9 @@ class PHG4InttDetector : public PHG4Detector
   std::pair<std::vector<std::pair<int, int>>::const_iterator, std::vector<std::pair<int, int>>::const_iterator> m_LayerBeginEndIteratorPair;
   std::map<G4VPhysicalVolume *, std::tuple<int, int, int, int>> m_ActiveVolumeTuple;
   std::map<G4LogicalVolume *, std::tuple<int, int>> m_PassiveVolumeTuple;
+
+  PHG4GDMLConfig* gdml_config;
+
 };
 
 #endif

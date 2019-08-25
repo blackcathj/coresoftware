@@ -42,6 +42,9 @@
 #include <Geant4/G4VPhysicalVolume.hh>              // for G4VPhysicalVolume
 #include <Geant4/geomdefs.hh>                       // for kZAxis
 
+#include <g4gdml/PHG4GDMLConfig.hh>
+#include <g4gdml/PHG4GDMLUtility.hh>
+
 #include <boost/format.hpp>
 
 #include <algorithm>                                // for fill_n
@@ -63,6 +66,7 @@ PHG4InttDetector::PHG4InttDetector(PHG4InttSubsystem* subsys, PHCompositeNode *N
   , m_IsSupportActive(0)
   , m_IsEndcapActive(0)
   , m_LayerBeginEndIteratorPair(layer_b_e)
+  ,gdml_config(PHG4GDMLUtility::GetOrMakeConfigNode(Node))
 {
   for (auto layeriter = m_LayerBeginEndIteratorPair.first; layeriter != m_LayerBeginEndIteratorPair.second; ++layeriter)
   {
@@ -1298,8 +1302,12 @@ int PHG4InttDetector::ConstructIntt(G4LogicalVolume *trackerenvelope)
         // this placement version rotates the ladder in its own frame by fRotate, then translates the center to posx, posy, +/- m_PosZ
         auto pointer_negz = new G4PVPlacement(G4Transform3D(ladderrotation, G4ThreeVector(posx, posy, -m_PosZ[inttlayer][itype])), ladder_volume,
                                             (boost::format("ladder_%d_%d_%d_negz") % inttlayer % itype % icopy).str(), trackerenvelope, false, 0, OverlapCheck());
+        gdml_config->exclude_physical_vol(pointer_negz);
+
         auto pointer_posz = new G4PVPlacement(G4Transform3D(ladderrotation, G4ThreeVector(posx, posy, +m_PosZ[inttlayer][itype])), ladder_volume,
                                               (boost::format("ladder_%d_%d_%d_posz") % inttlayer % itype % icopy).str(), trackerenvelope, false, 0, OverlapCheck());
+        gdml_config->exclude_physical_vol(pointer_posz);
+
         if (m_IsActiveMap.find(inttlayer) != m_IsActiveMap.end())
         {
         m_ActiveVolumeTuple.insert(make_pair(pointer_negz, make_tuple(inttlayer, itype, icopy, -1)));
@@ -1314,10 +1322,15 @@ int PHG4InttDetector::ConstructIntt(G4LogicalVolume *trackerenvelope)
           // We have added the outer sensor above, now we add the HDI extension tab to the end of the outer sensor HDI
           const double posz_ext = (hdi_z_arr[inttlayer][0] + hdi_z) + hdiext_z / 2.;
 
+          auto vol =
            new G4PVPlacement(G4Transform3D(ladderrotation, G4ThreeVector(posx, posy, -posz_ext)), ladderext_volume,
                              (boost::format("ladderext_%d_%d_%d_negz") % inttlayer % itype % icopy).str(), trackerenvelope, false, 0, OverlapCheck());
-           new G4PVPlacement(G4Transform3D(ladderrotation, G4ThreeVector(posx, posy, +posz_ext)), ladderext_volume,
+
+          gdml_config->exclude_physical_vol(vol);
+          vol = new G4PVPlacement(G4Transform3D(ladderrotation, G4ThreeVector(posx, posy, +posz_ext)), ladderext_volume,
                              (boost::format("ladderext_%d_%d_%d_posz") % inttlayer % itype % icopy).str(), trackerenvelope, false, 0, OverlapCheck());
+
+          gdml_config->exclude_physical_vol(vol);
         }
 
         if (Verbosity() > 100)
@@ -1367,8 +1380,10 @@ int PHG4InttDetector::ConstructIntt(G4LogicalVolume *trackerenvelope)
     const double posx = rail_radius * cos(phi);
     const double posy = rail_radius * sin(phi);
 
+    const auto vol =
     new G4PVPlacement(0, G4ThreeVector(posx, posy, 0.0), rail_volume,
                       (boost::format("si_support_rail_%d") % i).str(), trackerenvelope, false, 0, OverlapCheck());
+    gdml_config->exclude_physical_vol(vol);
   }
 
   // Outer skin
@@ -1404,12 +1419,17 @@ int PHG4InttDetector::ConstructIntt(G4LogicalVolume *trackerenvelope)
   m_DisplayAction->AddVolume(outer_skin_cfcin_volume,"Rail");
   m_DisplayAction->AddVolume(outer_skin_foam_volume,"Rail");
   m_DisplayAction->AddVolume(outer_skin_cfcout_volume,"Rail");
+
+  auto pvol =
   new G4PVPlacement(0, G4ThreeVector(0, 0.0), outer_skin_cfcin_volume,
                     "si_support_outer_skin_cfcin", trackerenvelope, false, 0, OverlapCheck());
-  new G4PVPlacement(0, G4ThreeVector(0, 0.0), outer_skin_foam_volume,
+  gdml_config->exclude_physical_vol(pvol);
+  pvol = new G4PVPlacement(0, G4ThreeVector(0, 0.0), outer_skin_foam_volume,
                     "si_support_outer_skin_foam", trackerenvelope, false, 0, OverlapCheck());
-  new G4PVPlacement(0, G4ThreeVector(0, 0.0), outer_skin_cfcout_volume,
+  gdml_config->exclude_physical_vol(pvol);
+  pvol = new G4PVPlacement(0, G4ThreeVector(0, 0.0), outer_skin_cfcout_volume,
                     "si_support_outer_skin_cfcout", trackerenvelope, false, 0, OverlapCheck());
+  gdml_config->exclude_physical_vol(pvol);
 
   // Inner skin
 
@@ -1425,8 +1445,9 @@ int PHG4InttDetector::ConstructIntt(G4LogicalVolume *trackerenvelope)
     m_PassiveVolumeTuple.insert(make_pair(inner_skin_volume, make_tuple(PHG4InttDefs::SUPPORT_DETID, PHG4InttDefs::INTT_INNER_SKIN)));
   }
   m_DisplayAction->AddVolume(inner_skin_volume,"Rail");
-  new G4PVPlacement(0, G4ThreeVector(0, 0.0), inner_skin_volume,
+  pvol =new G4PVPlacement(0, G4ThreeVector(0, 0.0), inner_skin_volume,
                     "si_support_inner_skin", trackerenvelope, false, 0, OverlapCheck());
+  gdml_config->exclude_physical_vol(pvol);
 
   // Endcap ring in simulations = Endcap rings + endcap staves 
   
@@ -1493,21 +1514,25 @@ int PHG4InttDetector::ConstructIntt(G4LogicalVolume *trackerenvelope)
            double cent_SSring_z = endcap_ring_z + width_WGring_z + width_SSring_z / 2.;
            double cent_Alring_z = endcap_ring_z + width_WGring_z + width_SSring_z + width_Alring_z / 2.;
 
-
+           auto pvol =
            new G4PVPlacement(0, G4ThreeVector(0, 0, cent_WGring_z),
                endcap_WG_ring_volume,
                (boost::format("endcap_WG_ring_pv_%d_%d") %i %j).str(),
                trackerenvelope, false, 0, OverlapCheck());
+           gdml_config->exclude_physical_vol(pvol);
 
-           new G4PVPlacement(0, G4ThreeVector(0, 0, cent_SSring_z),
+           pvol = new G4PVPlacement(0, G4ThreeVector(0, 0, cent_SSring_z),
                endcap_SS_ring_volume,
                (boost::format("endcap_SS_ring_pv_%d_%d") %i %j).str(),
                trackerenvelope, false, 0, OverlapCheck());
+           gdml_config->exclude_physical_vol(pvol);
 
-           new G4PVPlacement(0, G4ThreeVector(0, 0, cent_Alring_z),
+           pvol = new G4PVPlacement(0, G4ThreeVector(0, 0, cent_Alring_z),
                endcap_Al_ring_volume,
                (boost::format("endcap_Al_ring_pv_%d_%d") %i %j).str(),
                trackerenvelope, false, 0, OverlapCheck());
+           gdml_config->exclude_physical_vol(pvol);
+
          }
        }
      }
@@ -1546,24 +1571,28 @@ int PHG4InttDetector::ConstructIntt(G4LogicalVolume *trackerenvelope)
                                                   mvtx_shell_inner_skin_inner_radius, mvtx_shell_inner_skin_inner_radius + skin_thickness, mvtx_shell_length / 2.0, -M_PI, 2.0 * M_PI);
   G4LogicalVolume *mvtx_shell_inner_skin_volume = new G4LogicalVolume(mvtx_shell_inner_skin_tube, G4Material::GetMaterial("CFRP_INTT"),
                                                                       "mvtx_shell_inner_skin_volume", 0, 0, 0);
-  new G4PVPlacement(0, G4ThreeVector(0, 0.0), mvtx_shell_inner_skin_volume,
+  pvol = new G4PVPlacement(0, G4ThreeVector(0, 0.0), mvtx_shell_inner_skin_volume,
                     "mvtx_shell_inner_skin", trackerenvelope, false, 0, OverlapCheck());
+  gdml_config->exclude_physical_vol(pvol);
   m_DisplayAction->AddVolume(mvtx_shell_inner_skin_volume,"Rail");
+
 
   G4Tubs *mvtx_shell_foam_core_tube = new G4Tubs("mvtx_shell_foam_core",
                                                  mvtx_shell_foam_core_inner_radius, mvtx_shell_foam_core_inner_radius + foam_core_thickness, mvtx_shell_length / 2.0, -M_PI, 2.0 * M_PI);
   G4LogicalVolume *mvtx_shell_foam_core_volume = new G4LogicalVolume(mvtx_shell_foam_core_tube, G4Material::GetMaterial("ROHACELL_FOAM_110"),
                                                                      "mvtx_shell_foam_core_volume", 0, 0, 0);
-  new G4PVPlacement(0, G4ThreeVector(0, 0.0), mvtx_shell_foam_core_volume,
+  pvol = new G4PVPlacement(0, G4ThreeVector(0, 0.0), mvtx_shell_foam_core_volume,
                     "mvtx_shell_foam_core", trackerenvelope, false, 0, OverlapCheck());
+  gdml_config->exclude_physical_vol(pvol);
   m_DisplayAction->AddVolume(mvtx_shell_foam_core_volume,"Rail");
 
   G4Tubs *mvtx_shell_outer_skin_tube = new G4Tubs("mvtx_shell_outer_skin",
                                                   mvtx_shell_outer_skin_inner_radius, mvtx_shell_outer_skin_inner_radius + skin_thickness, mvtx_shell_length / 2.0, -M_PI, 2.0 * M_PI);
   G4LogicalVolume *mvtx_shell_outer_skin_volume = new G4LogicalVolume(mvtx_shell_outer_skin_tube, G4Material::GetMaterial("CFRP_INTT"),
                                                                       "mvtx_shell_outer_skin_volume", 0, 0, 0);
-  new G4PVPlacement(0, G4ThreeVector(0, 0.0), mvtx_shell_outer_skin_volume,
+  pvol = new G4PVPlacement(0, G4ThreeVector(0, 0.0), mvtx_shell_outer_skin_volume,
                     "mvtx_shell_outer_skin", trackerenvelope, false, 0, OverlapCheck());
+  gdml_config->exclude_physical_vol(pvol);
   m_DisplayAction->AddVolume(mvtx_shell_outer_skin_volume,"Rail");
   return 0;
 }

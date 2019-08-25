@@ -34,6 +34,9 @@
 #include <Geant4/G4Types.hh>                        // for G4double
 #include <Geant4/G4VPhysicalVolume.hh>              // for G4VPhysicalVolume
 
+#include <g4gdml/PHG4GDMLConfig.hh>
+#include <g4gdml/PHG4GDMLUtility.hh>
+
 #include <cmath>
 #include <cstdio>                                  // for sprintf
 #include <iostream>                                 // for operator<<, basic...
@@ -49,6 +52,7 @@ PHG4MvtxDetector::PHG4MvtxDetector(PHG4MvtxSubsystem* subsys, PHCompositeNode* N
   , m_DisplayAction(dynamic_cast<PHG4MvtxDisplayAction*>(subsys->GetDisplayAction()))
   , m_ParamsContainer(_paramsContainer)
   , m_StaveGeometryFile(_paramsContainer->GetParameters(PHG4MvtxDefs::GLOBAL)->get_string_param("stave_geometry_file"))
+  ,gdml_config(PHG4GDMLUtility::GetOrMakeConfigNode(Node))
 {
   //  Verbosity(2);
 

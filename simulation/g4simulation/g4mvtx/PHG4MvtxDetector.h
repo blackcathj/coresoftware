@@ -19,6 +19,7 @@ class PHCompositeNode;
 class PHG4MvtxDisplayAction;
 class PHG4MvtxSubsystem;
 class PHParametersContainer;
+class PHG4GDMLConfig;
 
 class PHG4MvtxDetector : public PHG4Detector
 {
@@ -84,6 +85,9 @@ class PHG4MvtxDetector : public PHG4Detector
   std::string m_Detector;
   std::string m_SuperDetector;
   std::string m_StaveGeometryFile;
+
+  PHG4GDMLConfig* gdml_config;
+
 };
 
 #endif

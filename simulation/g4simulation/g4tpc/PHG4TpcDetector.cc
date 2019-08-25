@@ -18,6 +18,9 @@
 #include <Geant4/G4UserLimits.hh>
 #include <Geant4/G4VPhysicalVolume.hh>   // for G4VPhysicalVolume
 
+#include <g4gdml/PHG4GDMLConfig.hh>
+#include <g4gdml/PHG4GDMLUtility.hh>
+
 #include <cmath>
 #include <iostream>                      // for basic_ostream::operator<<
 #include <map>                           // for map
@@ -38,7 +41,7 @@ PHG4TpcDetector::PHG4TpcDetector(PHG4TpcSubsystem *subsys, PHCompositeNode *Node
   , absorberactive(params->get_int_param("absorberactive"))
   , inner_cage_radius(params->get_double_param("gas_inner_radius") * cm - params->get_double_param("cage_layer_9_thickness") * cm - params->get_double_param("cage_layer_8_thickness") * cm - params->get_double_param("cage_layer_7_thickness") * cm - params->get_double_param("cage_layer_6_thickness") * cm - params->get_double_param("cage_layer_5_thickness") * cm - params->get_double_param("cage_layer_4_thickness") * cm - params->get_double_param("cage_layer_3_thickness") * cm - params->get_double_param("cage_layer_2_thickness") * cm - params->get_double_param("cage_layer_1_thickness") * cm)
   , outer_cage_radius(params->get_double_param("gas_outer_radius") * cm + params->get_double_param("cage_layer_9_thickness") * cm + params->get_double_param("cage_layer_8_thickness") * cm + params->get_double_param("cage_layer_7_thickness") * cm + params->get_double_param("cage_layer_6_thickness") * cm + params->get_double_param("cage_layer_5_thickness") * cm + params->get_double_param("cage_layer_4_thickness") * cm + params->get_double_param("cage_layer_3_thickness") * cm + params->get_double_param("cage_layer_2_thickness") * cm + params->get_double_param("cage_layer_1_thickness") * cm)
-
+  ,gdml_config(PHG4GDMLUtility::GetOrMakeConfigNode(Node))
 {
 }
 
@@ -93,9 +96,12 @@ void PHG4TpcDetector::Construct(G4LogicalVolume *logicWorld)
   ConstructTpcCageVolume(tpc_envelope_logic);
   ConstructTpcGasVolume(tpc_envelope_logic);
 
+  auto pvol =
   new G4PVPlacement(0, G4ThreeVector(params->get_double_param("place_x") * cm, params->get_double_param("place_y") * cm, params->get_double_param("place_z") * cm),
                     tpc_envelope_logic, "tpc_envelope",
                     logicWorld, 0, false, OverlapCheck());
+
+  gdml_config->exclude_physical_vol(pvol);
 }
 
 int PHG4TpcDetector::ConstructTpcGasVolume(G4LogicalVolume *tpc_envelope)
