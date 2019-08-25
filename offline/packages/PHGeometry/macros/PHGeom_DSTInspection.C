@@ -8,7 +8,44 @@
  * \date $Date: $
  */
 
+#if ROOT_VERSION_CODE >= ROOT_VERSION(6,00,0)
+#include <fun4all/SubsysReco.h>
+#include <fun4all/Fun4AllServer.h>
+#include <fun4all/Fun4AllInputManager.h>
+#include <fun4all/Fun4AllDummyInputManager.h>
+#include <fun4all/Fun4AllOutputManager.h>
+#include <fun4all/Fun4AllDstInputManager.h>
+#include <fun4all/Fun4AllNoSyncDstInputManager.h>
+#include <fun4all/Fun4AllDstOutputManager.h>
+#include <g4main/PHG4ParticleGeneratorBase.h>
+#include <g4main/PHG4ParticleGenerator.h>
+#include <g4main/PHG4SimpleEventGenerator.h>
+#include <g4main/PHG4ParticleGeneratorVectorMeson.h>
+#include <g4main/PHG4ParticleGun.h>
+#include <g4main/HepMCNodeReader.h>
+#include <g4detectors/PHG4DetectorSubsystem.h>
+#include <phool/recoConsts.h>
+#include <phpythia6/PHPythia6.h>
+#include <phpythia8/PHPythia8.h>
+#include <phhepmc/Fun4AllHepMCPileupInputManager.h>
+#include <phhepmc/Fun4AllHepMCInputManager.h>
+#include <phgeom/PHGeomUtility.h>
+R__LOAD_LIBRARY(libfun4all.so)
+R__LOAD_LIBRARY(libg4dst.so)
+R__LOAD_LIBRARY(libphgeom.so)
+R__LOAD_LIBRARY(libEve.so)
+#endif
+
+#include <TSystem.h>
+#include <TGeoManager.h>
+#include <TGeoNode.h>
+#include <TEveGeoNode.h>
+#include <TEveManager.h>
+#include <TEveElement.h>
+#include <string>
 #include <cassert>
+
+using namespace std;
 
 //! Quick inspection of PHGeoTGeo object in RUN/GEOMETRY node inside a DST file
 //! Based on abhisek's display macro
@@ -20,13 +57,10 @@ PHGeom_DSTInspection(string DST_file_name = "sPHENIX.root_DST.root",
 
 
   // main lib
+  gSystem->Load("libfun4all.so");
   gSystem->Load("libphgeom.so");
-
-  // in case DST contains sPHENIX stuff
-  gSystem->Load("libg4calo.so");
-  gSystem->Load("libg4vertex.so");
-  gSystem->Load("libcalotrigger_io.so");
-  gSystem->Load("libg4eval.so");
+  gSystem->Load("libg4dst.so");
+  gSystem->Load("libEve.so");
 
 
   Fun4AllServer *se = Fun4AllServer::instance();
