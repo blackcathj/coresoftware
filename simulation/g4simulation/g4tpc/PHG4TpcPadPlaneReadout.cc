@@ -122,7 +122,7 @@ int PHG4TpcPadPlaneReadout::CreateReadoutGeometry(PHCompositeNode *topNode, PHG4
       layerseggeo->set_phistep(PhiBinWidth[iregion]);
       // Chris Pinkenburg: greater causes huge memory growth which causes problems
       // on our farm. If you need to increase this - TALK TO ME first
-      if (NPhiBins[iregion] * NZBins > 5100000)
+      if (NPhiBins[iregion] * NZBins > 51000000)
       {
         cout << "increase Tpc cellsize, number of cells "
              << NPhiBins[iregion] * NZBins << " for layer " << layer
