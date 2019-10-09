@@ -255,6 +255,8 @@ void PHG4TpcDigitizer::DigitizeCylinderCells(PHCompositeNode *topNode)
   // Digitization
   //-------------
 
+  double total_charge_tpc = 0;
+
   // Loop over all hitsets for the Tpc
   TrkrHitSetContainer::ConstRange hitset_range = trkrhitsetcontainer->getHitSets(TrkrDefs::TrkrId::tpcId);
   for (TrkrHitSetContainer::ConstIterator hitset_iter = hitset_range.first;
@@ -265,6 +267,8 @@ void PHG4TpcDigitizer::DigitizeCylinderCells(PHCompositeNode *topNode)
     // get the hitset key so we can find the layer
     TrkrDefs::hitsetkey hitsetkey = hitset_iter->first;
     const unsigned int layer = TrkrDefs::getLayer(hitsetkey);
+    const uint8_t side = TpcDefs::getSide(hitsetkey);
+    const uint8_t sector = TpcDefs::getSectorId(hitsetkey);
 
     if (Verbosity() > 2)
       if (layer == print_layer)
@@ -343,23 +347,33 @@ void PHG4TpcDigitizer::DigitizeCylinderCells(PHCompositeNode *topNode)
 
       rapidjson::Value chanTree(rapidjson::kObjectType);
 
-      chanTree.AddMember("layer", layer, alloc);
-      chanTree.AddMember("phi-bin", iphi, alloc);
+      chanTree.AddMember("Side", side, alloc);
+      chanTree.AddMember("Sector", sector, alloc);
+      chanTree.AddMember("Layer", layer, alloc);
+      chanTree.AddMember("AzimuthalPad", iphi, alloc);
       chanTree.AddMember("ChargeUnit", "Electrons", alloc);
       chanTree.AddMember("TimeSpacing_ns", layergeom->get_zstep() / (8.0 / 1000.0), alloc);
-      chanTree.AddMember("TimeBins",nzbins, alloc);
+      chanTree.AddMember("TimeBins",nzbins/2, alloc);
 
       rapidjson::Value chanDataTree(rapidjson::kArrayType);
 
-      for (int iz = 0; iz < nzbins; iz++)
+
+      double total_charge = 0;
+      for (int iz_time = 0; iz_time < nzbins/2; iz_time++)
       {
+        int iz = iz_time;
+        if (side >0) iz = nzbins - 1 - iz_time;
+
         if (is_populated[iz] == 1)
         {
           // This zbin has a hit, add noise
           float noise = added_noise();                                                                      // in electrons
           float noise_voltage = (Pedestal + noise) * ADCNoiseConversionGain;                                // mV - from definition of noise charge and pedestal charge
           float adc_input_voltage = (z_sorted_hits[iz][0]->second)->getEnergy() * ADCSignalConversionGain;  // mV, see comments above
-          chanDataTree.PushBack(int(z_sorted_hits[iz][0]->second->getEnergy()), alloc);
+
+          const int charge_bin = int(z_sorted_hits[iz][0]->second->getEnergy());
+          chanDataTree.PushBack(charge_bin, alloc);
+          total_charge += charge_bin;
 
           adc_input.push_back(adc_input_voltage + noise_voltage);
           adc_hitid.push_back(z_sorted_hits[iz][0]->first);
@@ -389,7 +403,9 @@ void PHG4TpcDigitizer::DigitizeCylinderCells(PHCompositeNode *topNode)
         }
       }
 
-      chanTree.AddMember("charge-time", chanDataTree, alloc);
+      chanTree.AddMember("TotalCharge", total_charge, alloc);
+      total_charge_tpc += total_charge;
+      chanTree.AddMember("ChargeTimeBin", chanDataTree, alloc);
       d.AddMember("ChannelData", chanTree, alloc);
 
       // Now we can digitize the entire stream of z bins for this phi bin
@@ -624,6 +640,8 @@ void PHG4TpcDigitizer::DigitizeCylinderCells(PHCompositeNode *topNode)
     rapidjson::PrettyWriter<rapidjson::OStreamWrapper> writer(osw);
 
     d.Accept(writer);
+
+    cout <<__PRETTY_FUNCTION__<<" : total_charge_tpc = "<<total_charge_tpc<<endl;
   }
   return;
 }
