@@ -114,11 +114,6 @@ int PHG4TpcDigitizer::InitRun(PHCompositeNode *topNode)
     cout << "===========================================================================" << endl;
   }
 
-  if (!padChargeFile.empty())
-  {
-    cout << __PRETTY_FUNCTION__ << " save pad charge to " << padChargeFile << endl;
-    m_jsonOut.open((padChargeFile).c_str(), fstream::out);
-  }
   return Fun4AllReturnCodes::EVENT_OK;
 }
 
@@ -247,10 +242,6 @@ void PHG4TpcDigitizer::DigitizeCylinderCells(PHCompositeNode *topNode)
     exit(1);
   }
 
-  rapidjson::Document d;
-  d.SetObject();
-  rapidjson::Document::AllocatorType &alloc = d.GetAllocator();
-
   //-------------
   // Digitization
   //-------------
@@ -269,6 +260,10 @@ void PHG4TpcDigitizer::DigitizeCylinderCells(PHCompositeNode *topNode)
     const unsigned int layer = TrkrDefs::getLayer(hitsetkey);
     const uint8_t side = TpcDefs::getSide(hitsetkey);
     const uint8_t sector = TpcDefs::getSectorId(hitsetkey);
+
+    rapidjson::Document d;
+    d.SetObject();
+    rapidjson::Document::AllocatorType &alloc = d.GetAllocator();
 
     if (Verbosity() > 2)
       if (layer == print_layer)
@@ -353,16 +348,15 @@ void PHG4TpcDigitizer::DigitizeCylinderCells(PHCompositeNode *topNode)
       chanTree.AddMember("AzimuthalPad", iphi, alloc);
       chanTree.AddMember("ChargeUnit", "Electrons", alloc);
       chanTree.AddMember("TimeSpacing_ns", layergeom->get_zstep() / (8.0 / 1000.0), alloc);
-      chanTree.AddMember("TimeBins",nzbins/2, alloc);
+      chanTree.AddMember("TimeBins", nzbins / 2, alloc);
 
       rapidjson::Value chanDataTree(rapidjson::kArrayType);
 
-
       double total_charge = 0;
-      for (int iz_time = 0; iz_time < nzbins/2; iz_time++)
+      for (int iz_time = 0; iz_time < nzbins / 2; iz_time++)
       {
         int iz = iz_time;
-        if (side >0) iz = nzbins - 1 - iz_time;
+        if (side > 0) iz = nzbins - 1 - iz_time;
 
         if (is_populated[iz] == 1)
         {
@@ -393,7 +387,6 @@ void PHG4TpcDigitizer::DigitizeCylinderCells(PHCompositeNode *topNode)
           adc_hitid.push_back(0);              // there is no hit, just add a placeholder in the vector for now, replace it later
 
           chanDataTree.PushBack(0, alloc);
-
         }
         else
         {
@@ -535,6 +528,31 @@ void PHG4TpcDigitizer::DigitizeCylinderCells(PHCompositeNode *topNode)
 
     }  // end phibins loop
 
+    if (!padChargeFile.empty())
+    {
+      //      const unsigned int layer = TrkrDefs::getLayer(hitsetkey);
+      //      const uint8_t side = TpcDefs::getSide(hitsetkey);
+      //      const uint8_t sector = TpcDefs::getSectorId(hitsetkey);
+
+      string outfile = padChargeFile;
+      outfile += "_side";
+      outfile += to_string(side);
+      outfile += "_sector";
+      outfile += to_string(sector);
+      outfile += "_layer";
+      outfile += to_string(layer);
+      outfile += ".json";
+
+      cout << __PRETTY_FUNCTION__ << " save pad charge to " << outfile << endl;
+      m_jsonOut.open((outfile).c_str(), fstream::out);
+
+      rapidjson::OStreamWrapper osw(m_jsonOut);
+      rapidjson::PrettyWriter<rapidjson::OStreamWrapper> writer(osw);
+
+      d.Accept(writer);
+
+      m_jsonOut.close();
+    }
   }  // end loop over hitsets
 
   //======================================================
@@ -634,24 +652,13 @@ void PHG4TpcDigitizer::DigitizeCylinderCells(PHCompositeNode *topNode)
 
   //hittruthassoc->identify();
 
-  if (m_jsonOut.is_open())
-  {
-    rapidjson::OStreamWrapper osw(m_jsonOut);
-    rapidjson::PrettyWriter<rapidjson::OStreamWrapper> writer(osw);
-
-    d.Accept(writer);
-
-    cout <<__PRETTY_FUNCTION__<<" : total_charge_tpc = "<<total_charge_tpc<<endl;
-  }
+  cout << __PRETTY_FUNCTION__ << " : total_charge_tpc = " << total_charge_tpc << endl;
   return;
 }
 
 //! end of process
 int PHG4TpcDigitizer::End(PHCompositeNode *topNode)
 {
-  if (m_jsonOut.is_open())
-    m_jsonOut.close();
-
   return 0;
 }
 
