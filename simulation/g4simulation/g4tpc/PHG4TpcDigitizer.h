@@ -8,9 +8,10 @@
 #include <trackbase/TrkrDefs.h>
 #include <trackbase/TrkrHitSet.h>
 
+#include <fstream>  // std::fstream
 #include <map>
-#include <string>                  // for string
-#include <utility>                 // for pair, make_pair
+#include <string>   // for string
+#include <utility>  // for pair, make_pair
 #include <vector>
 
 // rootcint barfs with this header so we need to hide it
@@ -36,7 +37,7 @@ class PHG4TpcDigitizer : public SubsysReco
   int process_event(PHCompositeNode *topNode);
 
   //! end of process
-  int End(PHCompositeNode *topNode) { return 0; };
+  int End(PHCompositeNode *topNode);
 
   void set_adc_scale(const int layer, const unsigned int max_adc, const float energy_per_adc)
   {
@@ -47,6 +48,8 @@ class PHG4TpcDigitizer : public SubsysReco
   void SetTpcMinLayer(const int minlayer) { TpcMinLayer = minlayer; };
   void SetADCThreshold(const float thresh) { ADCThreshold = thresh; };
   void SetENC(const float enc) { TpcEnc = enc; };
+
+  void savePadChargeFile(const std::string &fname) { padChargeFile = fname; }
 
  private:
   void CalculateCylinderCellADCScale(PHCompositeNode *topNode);
@@ -77,6 +80,9 @@ class PHG4TpcDigitizer : public SubsysReco
   //! random generator that conform with sPHENIX standard
   gsl_rng *RandomGenerator;
 #endif
+
+  std::string padChargeFile;
+  std::fstream m_jsonOut;
 };
 
 #endif

@@ -21,7 +21,8 @@ libg4tpc_la_LIBADD = \
   -lg4detectors \
   -lphg4hit \
   -lphparameter \
-  -ltpc_io
+  -ltpc_io\
+  -L/opt/sphenix/core/rapidjson/lib
 
 pkginclude_HEADERS = \
   PHG4TpcElectronDrift.h \
