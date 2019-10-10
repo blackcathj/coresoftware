@@ -399,7 +399,19 @@ void PHG4TpcDigitizer::DigitizeCylinderCells(PHCompositeNode *topNode)
       chanTree.AddMember("TotalCharge", total_charge, alloc);
       total_charge_tpc += total_charge;
       chanTree.AddMember("ChargeTimeBin", chanDataTree, alloc);
-      d.AddMember("ChannelData", chanTree, alloc);
+
+
+      string strChannelData = "ChannelData";
+      strChannelData += "_side";
+      strChannelData += to_string(side);
+      strChannelData += "_sector";
+      strChannelData += to_string(sector);
+      strChannelData += "_layer";
+      strChannelData += to_string(layer);
+      strChannelData += "_iphi";
+      strChannelData += to_string(iphi);
+      rapidjson::Value keyChannelData(strChannelData.c_str(),alloc);
+      d.AddMember(keyChannelData, chanTree, alloc);
 
       // Now we can digitize the entire stream of z bins for this phi bin
 
