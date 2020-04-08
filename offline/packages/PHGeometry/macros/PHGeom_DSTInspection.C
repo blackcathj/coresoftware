@@ -176,7 +176,7 @@ void EditTPCGeometry(PHCompositeNode *topNode, const int verbosity = 1)
 
 //! Quick inspection of PHGeoTGeo object in RUN/GEOMETRY node inside a DST file
 //! Based on abhisek's display macro
-void PHGeom_DSTInspection(string DST_file_name = "G4sPHENIX.root",
+void PHGeom_DSTInspection(string DST_file_name = "/phenix/u/jinhuang/links/sPHENIX_work/G4sPHENIX.root",
                           bool do_clip = true)
 {
   TEveManager::Create();
@@ -235,4 +235,9 @@ void PHGeom_DSTInspection(string DST_file_name = "G4sPHENIX.root",
 
   v->CurrentCamera().RotateRad(3.14/2, 0.);
   v->DoDraw();
+
+
+
+  PHGeomUtility::ExportGeomtry(se->topNode(),"TGeo_export.root");
+  cout <<"Done export Geometry to TGeo_export.root"<<endl;
 }
