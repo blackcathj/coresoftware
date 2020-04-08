@@ -45,33 +45,37 @@ R__LOAD_LIBRARY(libfun4all.so)
 // i.e. after PHG4Reco and before any Kalman fitter calls
 void EditTPCGeometry(PHCompositeNode *topNode, const int verbosity = 1)
 {
-  PHGeomIOTGeo *dst_geom_io = PHGeomUtility::GetGeomIOTGeoNode(topNode, false);
+  // clean up existing TGeoManager before building a new one
+  PHGeomTGeo *geom_node =  PHGeomUtility::GetGeomTGeoNode(topNode, true);
+  assert(geom_node);
+  if (geom_node)
+  {
+    if (geom_node->isValid())
+    {
+      geom_node->Reset();
+    }
+  }
 
+  // read back geometry again from the DST persistent IO node
+  PHGeomIOTGeo *dst_geom_io = PHGeomUtility::GetGeomIOTGeoNode(topNode, false);
   if (not dst_geom_io)
   {
     cout << __PRETTY_FUNCTION__
          << " - ERROR - failed to update PHGeomTGeo node RUN/GEOMETRY due to missing PHGeomIOTGeo node at RUN/GEOMETRY_IO"
          << endl;
-    return ;
+    exit(1) ;
   }
   if (not dst_geom_io->isValid())
   {
     cout << __PRETTY_FUNCTION__
          << " - ERROR - failed to update PHGeomTGeo node RUN/GEOMETRY due to invalid PHGeomIOTGeo node at RUN/GEOMETRY_IO"
          << endl;
-    return ;
+    exit(1) ;
   }
 
   // build new TGeoManager
   TGeoManager *geoManager = dst_geom_io->ConstructTGeoManager();
-//  tgeo->CloseGeometry();
-
-  PHGeomTGeo *dst_geom =  PHGeomUtility::GetGeomTGeoNode(topNode, true);
-  assert(dst_geom);
-  dst_geom->SetGeometry(geoManager);
-
-//  TGeoManager *geoManager = PHGeomUtility::GetTGeoManager(topnode);
-
+  geom_node->SetGeometry(geoManager);
   assert(geoManager);
 
   TGeoVolume *World_vol = geoManager->GetTopVolume();
@@ -135,12 +139,12 @@ void EditTPCGeometry(PHCompositeNode *topNode, const int verbosity = 1)
     cout << "EditTPCGeometry - gas volume: ";
     tpc_gas_north_vol->Print();
   }
+  TGeoTube *tpc_gas_north_shape = dynamic_cast<TGeoTube *>(tpc_gas_north_vol->GetShape());
+  assert(tpc_gas_north_shape);
 
   // add two example measurement surfaces
   TGeoMedium *tpc_gas_north_medium = tpc_gas_north_vol->GetMedium();
   assert(tpc_gas_north_medium);
-  TGeoTube *tpc_gas_north_shape = dynamic_cast<TGeoTube *>(tpc_gas_north_vol->GetShape());
-  assert(tpc_gas_north_shape);
 
   // make a measurement volume with a box, 1.25x10 cm crosssection, TPC gas vol length
   TGeoVolume *tpc_gas_measurement_vol = geoManager->MakeBox("tpc_gas_measurement", tpc_gas_north_medium, 1.25, 10, tpc_gas_north_shape->GetDz());
@@ -165,6 +169,9 @@ void EditTPCGeometry(PHCompositeNode *topNode, const int verbosity = 1)
   // fixing shapes with negative parameters (run-time shapes)building the cache manager, voxelizing all volumes,
   // counting the total number of physical nodes and registering the manager class to the browser.
   geoManager->CloseGeometry();
+
+  // save the edited geometry to DST persistent IO node for downstream DST files
+  PHGeomUtility::UpdateIONode(topNode);
 }
 
 //! Quick inspection of PHGeoTGeo object in RUN/GEOMETRY node inside a DST file
@@ -189,7 +196,7 @@ void PHGeom_DSTInspection(string DST_file_name = "G4sPHENIX.root",
 
   EditTPCGeometry(se->topNode());
 
-  PHGeomUtility::GetTGeoManager(se->topNode());
+//  PHGeomUtility::GetTGeoManager(se->topNode());
   assert(gGeoManager);
 
   if (!gROOT->GetListOfGeometries()->FindObject(gGeoManager))
