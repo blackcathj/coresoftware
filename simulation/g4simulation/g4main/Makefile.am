@@ -132,6 +132,7 @@ else
     PHG4TruthSubsystem_Dict.cc \
     PHG4Utils_Dict.cc \
     ReadEICFiles_Dict.cc \
+    ReadSynRadFiles_Dict.cc \
     PHG4HitReadBack_Dict.cc
 endif
 
@@ -196,7 +197,8 @@ libg4testbench_la_SOURCES = \
   PHG4TruthTrackingAction.cc \
   PHG4UIsession.cc \
   PHG4Utils.cc \
-  ReadEICFiles.cc
+  ReadEICFiles.cc \
+  ReadSynRadFiles.cc
 
 
 ##############################################
@@ -242,7 +244,8 @@ pkginclude_HEADERS = \
   PHG4Utils.h \
   PHG4VtxPoint.h \
   PHG4VtxPointv1.h \
-  ReadEICFiles.h
+  ReadEICFiles.h \
+  ReadSynRadFiles.h
 
 ################################################
 # linking tests
