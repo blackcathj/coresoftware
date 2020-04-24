@@ -114,7 +114,7 @@ int ReadSynRadFiles::process_event(PHCompositeNode *topNode)
     Tokenizer tok(line);
     vec.assign(tok.begin(), tok.end());
 
-    if (vec.size() != 14)
+    if (vec.size() != 14 and vec.size() != 15)
     {
       cout << "ReadSynRadFiles::process_event - "
            << "invalid input :" << line << endl;
