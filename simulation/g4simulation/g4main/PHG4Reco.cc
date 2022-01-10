@@ -475,11 +475,11 @@ int PHG4Reco::InitRun(PHCompositeNode *topNode)
   // initialize
   m_RunManager->Initialize();
 
-  // add cerenkov and optical photon processes
-  // cout << endl << "Ignore the next message - we implemented this correctly" << endl;
-  G4Cerenkov *theCerenkovProcess = new G4Cerenkov("Cerenkov");
-  // cout << "End of bogus warning message" << endl << endl;
-  G4Scintillation* theScintillationProcess      = new G4Scintillation("Scintillation");
+//  // add cerenkov and optical photon processes
+//  // cout << endl << "Ignore the next message - we implemented this correctly" << endl;
+//  G4Cerenkov *theCerenkovProcess = new G4Cerenkov("Cerenkov");
+//  // cout << "End of bogus warning message" << endl << endl;
+//  G4Scintillation* theScintillationProcess      = new G4Scintillation("Scintillation");
 
   /*
     if (Verbosity() > 0)
@@ -488,52 +488,52 @@ int PHG4Reco::InitRun(PHCompositeNode *topNode)
     theCerenkovProcess->DumpPhysicsTable();
     }
   */
-  theCerenkovProcess->SetMaxNumPhotonsPerStep(300);
-  theCerenkovProcess->SetMaxBetaChangePerStep(10.0);
-  theCerenkovProcess->SetTrackSecondariesFirst(false);  // current PHG4TruthTrackingAction does not support suspect active track and track secondary first
-
-  theScintillationProcess->SetScintillationYieldFactor(1.0);
-  theScintillationProcess->SetTrackSecondariesFirst(false);
-  // theScintillationProcess->SetScintillationExcitationRatio(1.0);
-
-  // Use Birks Correction in the Scintillation process
-
-  // G4EmSaturation* emSaturation = G4LossTableManager::Instance()->EmSaturation();
-  // theScintillationProcess->AddSaturation(emSaturation);
-
-  G4ParticleTable *theParticleTable = G4ParticleTable::GetParticleTable();
-  G4ParticleTable::G4PTblDicIterator *_theParticleIterator;
-  _theParticleIterator = theParticleTable->GetIterator();
-  _theParticleIterator->reset();
-  while ((*_theParticleIterator)())
-  {
-    G4ParticleDefinition *particle = _theParticleIterator->value();
-    G4String particleName = particle->GetParticleName();
-    G4ProcessManager *pmanager = particle->GetProcessManager();
-    if (theCerenkovProcess->IsApplicable(*particle))
-    {
-      pmanager->AddProcess(theCerenkovProcess);
-      pmanager->SetProcessOrdering(theCerenkovProcess, idxPostStep);
-    }
-    if (theScintillationProcess->IsApplicable(*particle))
-    {
-      pmanager->AddProcess(theScintillationProcess);
-      pmanager->SetProcessOrderingToLast(theScintillationProcess, idxAtRest);
-      pmanager->SetProcessOrderingToLast(theScintillationProcess, idxPostStep);
-    }
-    for (PHG4Subsystem *g4sub: m_SubsystemList)
-    {
-      g4sub->AddProcesses(particle);
-    }
-  }
-  G4ProcessManager *pmanager = G4OpticalPhoton::OpticalPhoton()->GetProcessManager();
-  // std::cout << " AddDiscreteProcess to OpticalPhoton " << std::endl;
-  pmanager->AddDiscreteProcess(new G4OpAbsorption());
-  pmanager->AddDiscreteProcess(new G4OpRayleigh());
-  pmanager->AddDiscreteProcess(new G4OpMieHG());
-  pmanager->AddDiscreteProcess(new G4OpBoundaryProcess());
-  pmanager->AddDiscreteProcess(new G4OpWLS());
-  pmanager->AddDiscreteProcess(new G4PhotoElectricEffect());
+//  theCerenkovProcess->SetMaxNumPhotonsPerStep(300);
+//  theCerenkovProcess->SetMaxBetaChangePerStep(10.0);
+//  theCerenkovProcess->SetTrackSecondariesFirst(false);  // current PHG4TruthTrackingAction does not support suspect active track and track secondary first
+//
+//  theScintillationProcess->SetScintillationYieldFactor(1.0);
+//  theScintillationProcess->SetTrackSecondariesFirst(false);
+//  // theScintillationProcess->SetScintillationExcitationRatio(1.0);
+//
+//  // Use Birks Correction in the Scintillation process
+//
+//  // G4EmSaturation* emSaturation = G4LossTableManager::Instance()->EmSaturation();
+//  // theScintillationProcess->AddSaturation(emSaturation);
+//
+//  G4ParticleTable *theParticleTable = G4ParticleTable::GetParticleTable();
+//  G4ParticleTable::G4PTblDicIterator *_theParticleIterator;
+//  _theParticleIterator = theParticleTable->GetIterator();
+//  _theParticleIterator->reset();
+//  while ((*_theParticleIterator)())
+//  {
+//    G4ParticleDefinition *particle = _theParticleIterator->value();
+//    G4String particleName = particle->GetParticleName();
+//    G4ProcessManager *pmanager = particle->GetProcessManager();
+//    if (theCerenkovProcess->IsApplicable(*particle))
+//    {
+//      pmanager->AddProcess(theCerenkovProcess);
+//      pmanager->SetProcessOrdering(theCerenkovProcess, idxPostStep);
+//    }
+//    if (theScintillationProcess->IsApplicable(*particle))
+//    {
+//      pmanager->AddProcess(theScintillationProcess);
+//      pmanager->SetProcessOrderingToLast(theScintillationProcess, idxAtRest);
+//      pmanager->SetProcessOrderingToLast(theScintillationProcess, idxPostStep);
+//    }
+//    for (PHG4Subsystem *g4sub: m_SubsystemList)
+//    {
+//      g4sub->AddProcesses(particle);
+//    }
+//  }
+//  G4ProcessManager *pmanager = G4OpticalPhoton::OpticalPhoton()->GetProcessManager();
+//  // std::cout << " AddDiscreteProcess to OpticalPhoton " << std::endl;
+//  pmanager->AddDiscreteProcess(new G4OpAbsorption());
+//  pmanager->AddDiscreteProcess(new G4OpRayleigh());
+//  pmanager->AddDiscreteProcess(new G4OpMieHG());
+//  pmanager->AddDiscreteProcess(new G4OpBoundaryProcess());
+//  pmanager->AddDiscreteProcess(new G4OpWLS());
+//  pmanager->AddDiscreteProcess(new G4PhotoElectricEffect());
   // pmanager->DumpInfo();
 
   // needs large amount of memory which kills central hijing events
