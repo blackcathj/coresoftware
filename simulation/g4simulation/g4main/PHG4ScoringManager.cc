@@ -111,7 +111,7 @@ int PHG4ScoringManager::InitRun(PHCompositeNode */*topNode*/)
 
   hm->registerHisto(new TH1D("hVertexZ",  //
                              "Vertex z distribution;z [cm];Count",
-                             1000, -200, 200));
+                             10000, m_vertexHistRange.first, m_vertexHistRange.second));
 
   return Fun4AllReturnCodes::EVENT_OK;
 }
