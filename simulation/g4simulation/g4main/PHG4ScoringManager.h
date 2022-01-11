@@ -67,6 +67,7 @@ class PHG4ScoringManager : public SubsysReco
   void G4Command(const std::string &cmd);
 
   void setVertexHistRange(double min, double max) {m_vertexHistRange.first = min; m_vertexHistRange.second = max;}
+  void setVertexAcceptanceRange(double min, double max) {m_vertexAcceptanceRange.first = min; m_vertexAcceptanceRange.second = max;}
 
  private:
   Fun4AllHistoManager *getHistoManager();
@@ -76,7 +77,8 @@ class PHG4ScoringManager : public SubsysReco
 
   std::string m_outputFileName;
 
-  std::pair<double, double> m_vertexHistRange {-5e3 ,5e3 };
+  std::pair<double, double> m_vertexHistRange {-5e2 ,5e2 };
+  std::pair<double, double> m_vertexAcceptanceRange {-5e2 ,5e2 };
 };
 
 #endif /* PHG4SCORINGMANAGER_H_ */

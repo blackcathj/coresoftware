@@ -158,6 +158,19 @@ int PHG4ScoringManager::process_event(PHCompositeNode *topNode)
       assert(genevnt);
 
       hVertexZ->Fill(genevnt->get_collision_vertex().z());
+
+      if (genevnt->get_collision_vertex().z() < m_vertexAcceptanceRange.first
+          or genevnt->get_collision_vertex().z() > m_vertexAcceptanceRange.second)
+      {
+        if (Verbosity())
+        {
+          cout <<__PRETTY_FUNCTION__<<": get vertex "<<genevnt->get_collision_vertex().z()
+              <<" which is outside range "<<m_vertexAcceptanceRange.first <<" to "<<m_vertexAcceptanceRange.second<<" cm:";
+          genevnt->identify();
+        }
+
+        return Fun4AllReturnCodes::ABORTEVENT;
+      }
     }
   }
 
