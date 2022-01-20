@@ -101,6 +101,8 @@ int PHG4ScoringManager::InitRun(PHCompositeNode */*topNode*/)
   int i = 1;
   h->GetXaxis()->SetBinLabel(i++, "Event count");
   h->GetXaxis()->SetBinLabel(i++, "Collision count");
+  h->GetXaxis()->SetBinLabel(i++, "Event count accepted");
+  h->GetXaxis()->SetBinLabel(i++, "Collision count accepted");
   //  h->GetXaxis()->SetBinLabel(i++, "G4Hit count");
   h->GetXaxis()->LabelsOption("v");
   hm->registerHisto(h);
@@ -157,12 +159,10 @@ int PHG4ScoringManager::process_event(PHCompositeNode *topNode)
       const PHHepMCGenEvent *genevnt = genevntpair.second;
       assert(genevnt);
 
-      hVertexZ->Fill(genevnt->get_collision_vertex().z());
-
       if (genevnt->get_collision_vertex().z() < m_vertexAcceptanceRange.first
           or genevnt->get_collision_vertex().z() > m_vertexAcceptanceRange.second)
       {
-        if (Verbosity())
+        if (Verbosity() >= 2)
         {
           cout <<__PRETTY_FUNCTION__<<": get vertex "<<genevnt->get_collision_vertex().z()
               <<" which is outside range "<<m_vertexAcceptanceRange.first <<" to "<<m_vertexAcceptanceRange.second<<" cm:";
@@ -171,7 +171,11 @@ int PHG4ScoringManager::process_event(PHCompositeNode *topNode)
 
         return Fun4AllReturnCodes::ABORTEVENT;
       }
+
+      hVertexZ->Fill(genevnt->get_collision_vertex().z());
     }
+
+    h_norm->Fill("Collision count accepted", geneventmap->size());
   }
 
   TH1D *hNChEta = dynamic_cast<TH1D *>(hm->getHisto("hNChEta"));
@@ -206,6 +210,8 @@ int PHG4ScoringManager::process_event(PHCompositeNode *topNode)
       }
     }  //          if (_load_all_particle) else
   }
+
+  h_norm->Fill("Event count accepted", 1);
 
   return Fun4AllReturnCodes::EVENT_OK;
 }
