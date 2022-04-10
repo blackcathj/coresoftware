@@ -176,7 +176,6 @@ int PHG4Reco::Init(PHCompositeNode *topNode)
     G4Random::showEngineStatus();
 
     G4RunManager::GetRunManager()->SetRandomNumberStore(true);
-    G4RunManager::GetRunManager()->SetRandomNumberStoreDir("./");
 
   }
   DefineMaterials();
@@ -662,9 +661,6 @@ int PHG4Reco::process_event(PHCompositeNode *topNode)
   {
 
     G4Random::showEngineStatus();
-
-    G4RunManager::GetRunManager()->SetRandomNumberStore(true);
-    G4RunManager::GetRunManager()->SetRandomNumberStoreDir("./");
 
   }
   m_RunManager->BeamOn(1);
