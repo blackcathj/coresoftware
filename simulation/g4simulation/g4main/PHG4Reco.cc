@@ -169,6 +169,16 @@ int PHG4Reco::Init(PHCompositeNode *topNode)
 
   m_RunManager = new G4RunManager();
 
+
+  if (PHRandomSeed::Verbosity())
+  {
+
+    G4Random::showEngineStatus();
+
+    G4RunManager::GetRunManager()->SetRandomNumberStore(true);
+    G4RunManager::GetRunManager()->SetRandomNumberStoreDir("./");
+
+  }
   DefineMaterials();
   // create physics processes
   G4VModularPhysicsList *myphysicslist = nullptr;
@@ -646,6 +656,16 @@ int PHG4Reco::process_event(PHCompositeNode *topNode)
     std::cout << " PHG4Reco::process_event - "
          << "run one event :" << std::endl;
     ineve->identify();
+  }
+
+  if (PHRandomSeed::Verbosity())
+  {
+
+    G4Random::showEngineStatus();
+
+    G4RunManager::GetRunManager()->SetRandomNumberStore(true);
+    G4RunManager::GetRunManager()->SetRandomNumberStoreDir("./");
+
   }
   m_RunManager->BeamOn(1);
 
