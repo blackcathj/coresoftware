@@ -84,6 +84,7 @@
 #include <Geant4/G4Version.hh>
 #include <Geant4/G4VisExecutive.hh>
 #include <Geant4/G4VisManager.hh>  // for G4VisManager
+#include <Geant4/G4HadronicProcessStore.hh>  // for G4VisManager
 
 // physics lists
 #include <Geant4/FTFP_BERT.hh>
@@ -177,6 +178,13 @@ int PHG4Reco::Init(PHCompositeNode *topNode)
 
     G4RunManager::GetRunManager()->SetRandomNumberStore(true);
 
+    InitUImanager();
+    m_UImanager->ApplyCommand("/run/verbose 2");
+    m_UImanager->ApplyCommand("/tracking/verbose 20");
+    m_UImanager->ApplyCommand("/process/verbose 20");
+    m_UImanager->ApplyCommand("/process/had/cascade/verbose 20");
+    m_UImanager->ApplyCommand("/process/em/verbose 20");
+    m_UImanager->ApplyCommand("/process/eLoss/verbose 20");
   }
   DefineMaterials();
   // create physics processes
@@ -571,6 +579,8 @@ int PHG4Reco::InitRun(PHCompositeNode *topNode)
     std::cout << "PHG4Reco::InitRun - writing geometry to " << m_ExportGeomFilename << std::endl;
     PHGeomUtility::ExportGeomtry(topNode, m_ExportGeomFilename);
   }
+
+  G4HadronicProcessStore::Instance()->SetVerbose(10);
   
   return 0;
 }
@@ -621,6 +631,7 @@ int PHG4Reco::InitUImanager()
     m_VisManager->Initialize();
     m_UImanager = G4UImanager::GetUIpointer();
   }
+
   return 0;
 }
 
