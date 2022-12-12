@@ -666,7 +666,7 @@ void PHG4TpcEndCapDetector::ConstructElectronics(G4AssemblyVolume *assmeblyvol,
         {
           G4Transform3D trans_electronic = G4RotateZ3D(board_phi_start + board_dphi * board_id);
 
-          assmeblyvol->AddPlacedAssembly(assmeblyvol_electronics, trans_electronic);
+//          assmeblyvol->AddPlacedAssembly(assmeblyvol_electronics, trans_electronic);
         }
       }  //     for (int sector_id = 0; sector_id < n_sectors; ++sector_id)
 
