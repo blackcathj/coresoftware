@@ -73,6 +73,7 @@ libfun4allraw_la_SOURCES = \
   intt_pool.cc \
   mvtx_pool.cc \
   tpc_pool.cc \
+  TpcTimeFrameBuilder.cc \
   SingleCemcTriggerInput.cc \
   SingleGl1PoolInput.cc \
   SingleGl1TriggerInput.cc \
@@ -93,7 +94,8 @@ libfun4allraw_la_LIBADD = \
   -lffarawobjects \
   -lfun4all \
   -lEvent \
-  -lphoolraw
+  -lphoolraw \
+  -lqautils
 
 BUILT_SOURCES = testexternals.cc
 
