@@ -44,7 +44,6 @@ class TpcTimeFrameBuilder
   // unsigned short reverseBits(const unsigned short x) const;
   // unsigned short crc16(const unsigned int fee, const unsigned int index, const int l) const;
 
-  int find_header(const unsigned int xx, const std::vector<unsigned short> &orig);
   int decode_gtm_data(unsigned short gtm[DAM_DMA_WORD_BYTE_LENGTH]);
   int process_fee_data();
  

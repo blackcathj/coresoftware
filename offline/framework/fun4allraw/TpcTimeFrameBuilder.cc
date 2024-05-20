@@ -85,11 +85,11 @@ int TpcTimeFrameBuilder::ProcessPacket(Packet *packet)
 
   int l = packet->getDataLength() + 16;
   l *= 2;  // int to uint16
-  uint16_t buffer[l];
+  vector<uint16_t> buffer(l);
 
   int l2 = 0;
 
-  packet->fillIntArray(reinterpret_cast<int *>(buffer), l, &l2, "DATA");
+  packet->fillIntArray(reinterpret_cast<int *>(buffer.data()), l, &l2, "DATA");
   l2 -= packet->getPadding();
   assert(l2 >= 0);
   unsigned int payload_length = 2 * (unsigned int) l2;  // int to uint16
@@ -179,52 +179,6 @@ int TpcTimeFrameBuilder::decode_gtm_data(unsigned short dat[16])
   return 0;
 }
 
-// int TpcTimeFrameBuilder::find_header ( std::vector<unsigned short>::const_iterator &itr,  const std::vector<unsigned short> &orig)
-int TpcTimeFrameBuilder::find_header(const unsigned int yy, const std::vector<unsigned short> &orig)
-{
-  bool found = false;
-  unsigned int pos = yy;
-  std::vector<unsigned short> header_candidate;
-
-  // we slide over the data and find the header, if any.
-  // we calculate and return the amount of words we need to skip to find the vector.
-  // if we find it right away, the amount returned is 0;
-  // -1 for an error condition or end, like we hit the end without finding another header.
-  // the complication here is that we look ahead a few words to recognize it.
-
-  for (unsigned int i = 0; i < HEADER_LENGTH; i++)  // we start out with one "header candidate" = 7 entries
-  {
-    if (pos >= orig.size())  // if we reached the end, no more header here
-    {
-      return -1;
-    }
-
-    header_candidate.push_back(orig[pos]);
-    pos++;
-  }
-
-  int skip_amount = 0;
-  while (!found)
-  {
-    if (header_candidate[4] == MAGIC_KEY_0 && header_candidate[6] == MAGIC_KEY_1 && (header_candidate[0] - header_candidate[5] == HEADER_LENGTH))
-    {
-      // found it!
-      found = true;
-      break;
-    }
-    skip_amount++;
-    if (pos >= orig.size())  // if we reached the end, no more header here
-    {
-      return -1;
-    }
-
-    header_candidate.erase(header_candidate.begin());  // delete the vector 1st element
-    header_candidate.push_back(orig[pos]);             // push a new value, rinse and repeat
-    pos++;
-  }
-
-  return skip_amount;
-}
 
 // unsigned short TpcTimeFrameBuilder::reverseBits(const unsigned short x) const
 // {
