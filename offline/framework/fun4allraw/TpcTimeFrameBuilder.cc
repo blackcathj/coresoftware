@@ -2,6 +2,8 @@
 
 #include <Event/packet.h>
 
+#include <ffarawobjects/TpcRawHitv2.h>
+
 #include <fun4all/Fun4AllHistoManager.h>
 #include <fun4all/Fun4AllReturnCodes.h>
 #include <qautils/QAHistManagerDef.h>
@@ -28,8 +30,8 @@ TpcTimeFrameBuilder::TpcTimeFrameBuilder(const int packet_id)
   Fun4AllHistoManager *hm = QAHistManagerDef::getHistoManager();
   assert(hm);
 
-  TH1D *h = new TH1D(TString(m_HistoPrefix.c_str()) + "_Normalization",  //
-                     TString(m_HistoPrefix.c_str()) + " Normalization;Items;Count", 10, .5, 10.5);
+  TH1 *h = new TH1D(TString(m_HistoPrefix.c_str()) + "_Normalization",  //
+                    TString(m_HistoPrefix.c_str()) + " Normalization;Items;Count", 10, .5, 10.5);
   int i = 1;
   h->GetXaxis()->SetBinLabel(i++, "Packet");
   h->GetXaxis()->SetBinLabel(i++, "Lv1-Taggers");
@@ -42,6 +44,15 @@ TpcTimeFrameBuilder::TpcTimeFrameBuilder(const int packet_id)
   h = new TH1D(TString(m_HistoPrefix.c_str()) + "_PacketLength",  //
                TString(m_HistoPrefix.c_str()) + " PacketLength;PacketLength [16bit Words];Count", 1000, .5, 5e6);
   hm->registerHisto(h);
+
+  h = new TH2I(TString(m_HistoPrefix.c_str()) + "_FEE_DataStream_WordCount",  //
+               TString(m_HistoPrefix.c_str()) +
+                   " FEE Data Stream Word Count;FEE ID;Type;Count",
+               MAX_FEECOUNT, -.5, MAX_FEECOUNT - .5, 2, .5, 2.5);
+
+  h->GetYaxis()->SetBinLabel(1, "Valid");
+  h->GetYaxis()->SetBinLabel(2, "Skipped");
+  hm->registerHisto(h);
 }
 
 TpcTimeFrameBuilder::~TpcTimeFrameBuilder()
@@ -51,6 +62,15 @@ TpcTimeFrameBuilder::~TpcTimeFrameBuilder()
     delete (*itr);
   }
   gtm_data.clear();
+
+  for (auto it = m_timeFrameMap.begin(); it != m_timeFrameMap.end(); ++it)
+  {
+    while (!it->second.empty())
+    {
+      delete it->second.back();
+      it->second.pop_back();
+    }
+  }
 }
 
 int TpcTimeFrameBuilder::ProcessPacket(Packet *packet)
@@ -141,7 +161,7 @@ int TpcTimeFrameBuilder::ProcessPacket(Packet *packet)
     {
       cout << __PRETTY_FUNCTION__ << " : Error : Unknown data type at position " << index << ": " << hex << buffer[index] << dec << endl;
       // not FEE data, e.g. GTM data or other stream, to be decoded
-      index += DAM_DMA_WORD_BYTE_LENGTH ;
+      index += DAM_DMA_WORD_BYTE_LENGTH;
     }
   }
 
@@ -150,6 +170,127 @@ int TpcTimeFrameBuilder::ProcessPacket(Packet *packet)
 
 int TpcTimeFrameBuilder::process_fee_data()
 {
+  Fun4AllHistoManager *hm = QAHistManagerDef::getHistoManager();
+  assert(hm);
+  TH2I *h_fee = dynamic_cast<TH2I *>(hm->getHisto(
+      m_HistoPrefix + "_FEE_DataStream_WordCount"));
+  assert(h_fee);
+
+  for (unsigned int fee = 0; fee < MAX_FEECOUNT; fee++)
+  {
+    if (m_verbosity)
+    {
+      cout << __PRETTY_FUNCTION__ << " : processing FEE " << fee << " with " << fee_data[fee].size() << " words" << endl;
+    }
+
+    assert(fee < fee_data.size());
+    auto &data_buffer = fee_data[fee];
+
+    while (HEADER_LENGTH < data_buffer.size())
+    {
+      // packet loop
+      if (data_buffer[4] != FEE_PACKET_MAGIC_KEY_4)
+      {
+        if (m_verbosity > 1)
+        {
+          cout << __PRETTY_FUNCTION__ << " : Error : Invalid FEE magic key at position 4 " << data_buffer[4] << endl;
+        }
+        h_fee->Fill(fee, 2);
+        data_buffer.pop_front();
+        continue;
+      }
+    }
+    if (data_buffer[4] != FEE_PACKET_MAGIC_KEY_4)
+    {
+      continue;
+    }
+
+    //valid packet
+    const uint16_t &pkt_length = data_buffer[0];     // this is indeed the number of 10-bit words + 5 in this packet
+    const uint16_t adc_length = data_buffer[0] - 5;  // this is indeed the number of 10-bit words in this packet
+    const uint16_t sampa_address = (data_buffer[1] >> 5) & 0xf;
+    const uint16_t sampa_channel = data_buffer[1] & 0x1f;
+    const uint16_t channel = data_buffer[1] & 0x1ff;
+    const uint16_t bx_timestamp = ((data_buffer[3] & 0x1ff) << 11) | ((data_buffer[2] & 0x3ff) << 1) | (data_buffer[1] >> 9);
+
+    if (m_verbosity > 1)
+    {
+      cout << __PRETTY_FUNCTION__ << " : received data packet "
+           << " pkt_length = " << pkt_length
+           << " adc_length = " << adc_length
+           << " sampa_address = " << sampa_address
+           << " sampa_channel = " << sampa_channel
+           << " channel = " << channel
+           << " bx_timestamp = " << bx_timestamp
+
+           << endl;
+    }
+
+    if (pkt_length >= data_buffer.size())
+    {
+      if (m_verbosity > 1)
+      {
+        cout << __PRETTY_FUNCTION__ << " : packet over boundary, skip to next load "
+                                       " pkt_length = "
+             << pkt_length
+             << " data_buffer.size() = " << data_buffer.size()
+             << endl;
+      }
+
+      continue;
+    }
+
+    // valid packet in the buffer, create a new hit
+    TpcRawHitv2 *hit = new TpcRawHitv2();
+    hit->set_bco(bx_timestamp);
+    hit->set_gtm_bco(0);
+    hit->set_packetid(m_packet_id);
+    hit->set_fee(fee);
+    hit->set_channel(channel);
+    hit->set_sampaaddress(sampa_address);
+    hit->set_sampachannel(sampa_channel);
+
+    // // Format is (N sample) (start time), (1st sample)... (Nth sample)
+    // //for (int i = 0 ; i < header[0]-5 ; i++)
+    // while (data_size_counter > 0)
+    // {
+    //   int nsamp = fee_data[ifee][pos++];
+    //   int start_t = fee_data[ifee][pos++];
+
+    //   data_size_counter -= 2;
+
+    //   actual_data_size += nsamp;
+    //   actual_data_size += 2;
+
+    //   // We decided to suppress errors (May 13, 2024)
+    //   //		  if(nsamp>data_size_counter){ cout<<"nsamp: "<<nsamp<<", size: "<<data_size_counter<<", format error"<<endl; break;}
+
+    //   for (int j = 0; j < nsamp; j++)
+    //   {
+    //     if (start_t + j < 1024)
+    //     {
+    //       sw->waveform[start_t + j] = fee_data[ifee][pos++];
+    //     }
+    //     else
+    //     {
+    //       pos++;
+    //     }
+    //     //                   cout<<"data: "<< sw->waveform[start_t+j]<<endl;
+    //     data_size_counter--;
+
+    //     //
+    //     // This line is inserted to accommodate the "wrong format issue", which is the
+    //     // last sample from the data is missing. This issue should be fixed and eventually
+    //     // the following two lines will be removed. Apr 30. by TS
+    //     //
+    //     if (data_size_counter == 1) break;
+    //   }
+    //   //                  cout<<"data_size_counter: "<<data_size_counter<<" "<<endl;
+    //   if (data_size_counter == 1) break;
+    // }
+
+  }  //   for (unsigned int fee = 0; fee < MAX_FEECOUNT; fee++)
+
   return Fun4AllReturnCodes::EVENT_OK;
 }
 
@@ -178,7 +319,6 @@ int TpcTimeFrameBuilder::decode_gtm_data(unsigned short dat[16])
 
   return 0;
 }
-
 
 // unsigned short TpcTimeFrameBuilder::reverseBits(const unsigned short x) const
 // {
