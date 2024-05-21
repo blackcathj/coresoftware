@@ -27,14 +27,14 @@ TpcRawHitv2::TpcRawHitv2(TpcRawHit *tpchit)
     set_sampaaddress(tpchit->get_sampaaddress());
     set_sampachannel(tpchit->get_sampachannel());
 
-    wavelets = std::map<uint16_t, std::vector<uint16_t>>();
+    m_wavelets = std::map<uint16_t, std::vector<uint16_t>>();
     std::vector<uint16_t> wavelet;
     for (size_t i = 0; i < tpchit->get_samples(); ++i)
     {
       wavelet.push_back(tpchit->get_adc(i));
     }
 
-    wavelets.insert(std::make_pair(0, wavelet));
+    m_wavelets.insert(std::make_pair(0, wavelet));
   }
 }
 
@@ -47,16 +47,16 @@ void TpcRawHitv2::identify(std::ostream &os) const
 
 void TpcRawHitv2::Clear(Option_t * /*unused*/)
 {
-  wavelets = std::map<uint16_t, std::vector<uint16_t>>();
+  m_wavelets = std::map<uint16_t, std::vector<uint16_t>>();
 }
 
 uint16_t TpcRawHitv2::get_samples() const
 {
   uint16_t samples = 0;
 
-  if (wavelets.rbegin() != wavelets.rend())
+  if (m_wavelets.rbegin() != m_wavelets.rend())
   {
-    samples = wavelets.rbegin()->first + wavelets.rbegin()->second.size();
+    samples = m_wavelets.rbegin()->first + m_wavelets.rbegin()->second.size();
   }
 
   return samples;
@@ -71,8 +71,8 @@ uint16_t TpcRawHitv2::get_adc(size_t sample) const
 {
   uint16_t adc = std::numeric_limits<uint16_t>::max();
 
-  const auto wavelet = wavelets.lower_bound(sample);
-  if (wavelet != wavelets.end())
+  const auto wavelet = m_wavelets.lower_bound(sample);
+  if (wavelet != m_wavelets.end())
   {
     assert(sample >= wavelet->first);
     size_t position_in_wavelet = sample - wavelet->first;

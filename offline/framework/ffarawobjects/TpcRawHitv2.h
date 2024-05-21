@@ -52,14 +52,31 @@ class TpcRawHitv2 : public TpcRawHit
   // cppcheck-suppress virtualCallInConstructor
   void set_sampachannel(uint16_t const val) override { sampachannel = val; }
 
+  // cppcheck-suppress virtualCallInConstructor
   uint16_t get_samples() const override;
+
   // cppcheck-suppress virtualCallInConstructor
   void set_samples(uint16_t const val) override;
 
+  // cppcheck-suppress virtualCallInConstructor
   uint16_t get_adc(size_t sample) const override;
 
   // cppcheck-suppress virtualCallInConstructor
   void set_adc(size_t sample, uint16_t val) override;
+
+  // cppcheck-suppress virtualCallInConstructor
+  void add_wavelet(uint16_t start_sample, const std::vector<uint16_t> &wavelet) override
+  {
+    m_wavelets[start_sample] = wavelet;  
+  }
+
+  // cppcheck-suppress virtualCallInConstructor
+  const std::map<uint16_t, std::vector<uint16_t>>  & get_wavelets() const override
+  {
+    return m_wavelets;  
+  }
+
+
 
  private:
   uint64_t bco = std::numeric_limits<uint64_t>::max();
@@ -71,7 +88,7 @@ class TpcRawHitv2 : public TpcRawHit
   uint16_t sampachannel = std::numeric_limits<uint16_t>::max();
 
   //! start sample -> wavelets of consecutive ADC values
-  std::map<uint16_t, std::vector<uint16_t>> wavelets;
+  std::map<uint16_t, std::vector<uint16_t>> m_wavelets;
 
   ClassDefOverride(TpcRawHitv2, 1)
 };

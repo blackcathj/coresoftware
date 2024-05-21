@@ -4,6 +4,8 @@
 #include <phool/PHObject.h>
 
 #include <limits>
+#include <map>
+#include <cstdint>
 
 class TpcRawHit : public PHObject
 {
@@ -37,6 +39,15 @@ class TpcRawHit : public PHObject
 
   virtual uint16_t get_adc(size_t /*sample*/) const { return std::numeric_limits<uint16_t>::max(); }
   virtual void set_adc(size_t /*sample*/, const uint16_t) { return; }
+
+  virtual void add_wavelet(uint16_t , const std::vector<uint16_t> &) { return; }
+
+  // cppcheck-suppress virtualCallInConstructor
+  virtual const std::map<uint16_t, std::vector<uint16_t>> &get_wavelets() const
+  {
+    static std::map<uint16_t, std::vector<uint16_t>> m_dummy;
+    return m_dummy;
+  }
 
  private:
   ClassDefOverride(TpcRawHit, 1)

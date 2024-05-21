@@ -8,8 +8,8 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <deque>
 
-#include <boost/circular_buffer.hpp>
 
 class Packet;
 class TpcRawHit;
@@ -39,8 +39,8 @@ class TpcTimeFrameBuilder
   static const uint16_t MAX_CHANNELS = 8 * 32;  // that many channels per FEE
   static const uint16_t HEADER_LENGTH = 5;
 
-  // uint16_t reverseBits(const uint16_t x) const;
-  // uint16_t crc16(const uint32_t fee, const uint32_t index, const int l) const;
+  uint16_t reverseBits(const uint16_t x) const;
+  uint16_t crc16(const uint32_t fee, const uint32_t index, const int l) const;
 
   int decode_gtm_data(uint16_t gtm[DAM_DMA_WORD_BYTE_LENGTH]);
   int process_fee_data();
@@ -59,7 +59,7 @@ class TpcTimeFrameBuilder
 
   std::vector<gtm_payload *> gtm_data;
 
-  std::vector<boost::circular_buffer_space_optimized<uint16_t>> fee_data;
+  std::vector<std::deque<uint16_t>> m_feeData;
 
   int m_verbosity = 0;
   int m_packet_id = 0;
@@ -67,6 +67,7 @@ class TpcTimeFrameBuilder
   //! common prefix for QA histograms
   std::string m_HistoPrefix;
 
+  //! GTM BCO -> TpcRawHit 
   std::map<uint64_t, std::vector<TpcRawHit *> > m_timeFrameMap;
 };
 
