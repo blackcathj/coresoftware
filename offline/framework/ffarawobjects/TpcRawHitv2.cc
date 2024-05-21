@@ -41,8 +41,23 @@ TpcRawHitv2::TpcRawHitv2(TpcRawHit *tpchit)
 void TpcRawHitv2::identify(std::ostream &os) const
 {
   os << "TpcRawHitv2 (TPC with zero suppression): ";
-  os << "BCO: 0x" << std::hex << bco << std::dec << std::endl;
-  os << "packet id: " << packetid << std::endl;
+  os << "  BCO: 0x" << std::hex << bco << "GTM BCO: 0x"<< gtm_bco << std::dec << std::endl;
+  os << "  packet id: " << packetid << std::endl;
+  os << "  fee: " << fee << std::endl;
+  os << "  channel: " << channel << std::endl;
+  os << "  sampa address: " << sampaaddress << std::endl;
+  os << "  sampa channel: " << sampachannel << std::endl;
+  os << "  wavelets: " << std::endl;
+  for (const auto &wavelet : m_wavelets)
+  {
+    os << "  start sample: " << wavelet.first << std::endl;
+    for (const auto &adc : wavelet.second)
+    {
+      os << "\t" << adc ;
+    }
+     os<< std::endl;
+  }
+
 }
 
 void TpcRawHitv2::Clear(Option_t * /*unused*/)
