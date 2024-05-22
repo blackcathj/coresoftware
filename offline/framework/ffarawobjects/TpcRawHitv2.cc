@@ -84,7 +84,7 @@ void TpcRawHitv2::set_samples(uint16_t const)
 
 uint16_t TpcRawHitv2::get_adc(size_t sample) const
 {
-  uint16_t adc = std::numeric_limits<uint16_t>::max();
+  uint16_t adc = 0;
 
   const auto wavelet = m_wavelets.lower_bound(sample);
   if (wavelet != m_wavelets.end())

@@ -20,6 +20,7 @@ class TpcTimeFrameBuilder
   virtual ~TpcTimeFrameBuilder();
 
   int ProcessPacket(Packet *);
+  bool isMoreDataRequired() const { return true; }
 
   void setVerbosity(const int i) { m_verbosity = i; }
 
