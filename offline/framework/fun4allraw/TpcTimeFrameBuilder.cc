@@ -40,6 +40,11 @@ TpcTimeFrameBuilder::TpcTimeFrameBuilder(const int packet_id)
   h->GetXaxis()->SetBinLabel(i++, "EnDat-Taggers");
   h->GetXaxis()->SetBinLabel(i++, "ChannelPackets");
   h->GetXaxis()->SetBinLabel(i++, "Waveforms");
+
+  h->GetXaxis()->SetBinLabel(i++, "DMA_WORD_GTM");
+  h->GetXaxis()->SetBinLabel(i++, "DMA_WORD_FEE");
+  h->GetXaxis()->SetBinLabel(i++, "DMA_WORD_FEE_INVALID");
+  h->GetXaxis()->SetBinLabel(i++, "DMA_WORD_INVALID");
   h->GetXaxis()->LabelsOption("v");
   hm->registerHisto(h);
 
@@ -148,11 +153,13 @@ int TpcTimeFrameBuilder::ProcessPacket(Packet *packet)
           }
           m_feeData[fee_id].push_back(buffer[index++]);
         }
+        h_norm->Fill("DMA_WORD_FEE", 1);
       }
       else
       {
         cout << __PRETTY_FUNCTION__ << " : Error : Invalid FEE ID " << fee_id << " at position " << index << endl;
         index += DAM_DMA_WORD_BYTE_LENGTH - 1;
+        h_norm->Fill("DMA_WORD_FEE_INVALID", 1);
       }
     }
     else if ((buffer[index] & 0xFF00) == GTM_MAGIC_KEY)
@@ -165,12 +172,14 @@ int TpcTimeFrameBuilder::ProcessPacket(Packet *packet)
       }
       decode_gtm_data(&buffer[index]);
       index += DAM_DMA_WORD_BYTE_LENGTH;
+      h_norm->Fill("DMA_WORD_GTM", 1);
     }
     else
     {
       cout << __PRETTY_FUNCTION__ << " : Error : Unknown data type at position " << index << ": " << hex << buffer[index] << dec << endl;
       // not FEE data, e.g. GTM data or other stream, to be decoded
       index += DAM_DMA_WORD_BYTE_LENGTH;
+      h_norm->Fill("DMA_WORD_INVALID", 1);
     }
   }
 
