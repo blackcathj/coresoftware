@@ -3,13 +3,12 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <deque>
 #include <functional>
 #include <iostream>
 #include <map>
 #include <string>
 #include <vector>
-#include <deque>
-
 
 class Packet;
 class TpcRawHit;
@@ -57,8 +56,6 @@ class TpcTimeFrameBuilder
     uint8_t modebits;
   };
 
-  std::vector<gtm_payload *> gtm_data;
-
   std::vector<std::deque<uint16_t>> m_feeData;
 
   int m_verbosity = 0;
@@ -67,8 +64,26 @@ class TpcTimeFrameBuilder
   //! common prefix for QA histograms
   std::string m_HistoPrefix;
 
-  //! GTM BCO -> TpcRawHit 
-  std::map<uint64_t, std::vector<TpcRawHit *> > m_timeFrameMap;
+  //! GTM BCO -> TpcRawHit
+  std::map<uint64_t, std::vector<TpcRawHit *>> m_timeFrameMap;
+
+  // -------------------------
+  // GTM Matcher
+  // -------------------------
+
+  //! GTM Matcher Strategy, order by reliability
+  enum enu_gtmMatcherStrategy
+  {
+    //! if knowing nothing, simply matching FEE waveform to the last levl1 tagger
+    kLastLv1Tagger = 0,
+    //! tracking FEE BCO to GTM BCO sync
+    kFEEWaveformBCOSync = 1,
+    //! tracking FEE heartbeat to GTM BCO sync
+    kFEEHeartBeatSync = 2
+  };
+  enu_gtmMatcherStrategy m_gtmMatcherStrategy = kLastLv1Tagger;
+  uint64_t matchFEE2GTMBCO(uint16_t fee_bco);
+  std::map<uint64_t, gtm_payload> m_gtmData;
 };
 
 #endif

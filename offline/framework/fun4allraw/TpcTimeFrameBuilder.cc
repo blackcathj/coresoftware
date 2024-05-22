@@ -63,12 +63,6 @@ TpcTimeFrameBuilder::TpcTimeFrameBuilder(const int packet_id)
 
 TpcTimeFrameBuilder::~TpcTimeFrameBuilder()
 {
-  for (auto itr = gtm_data.begin(); itr != gtm_data.end(); ++itr)
-  {
-    delete (*itr);
-  }
-  gtm_data.clear();
-
   for (auto it = m_timeFrameMap.begin(); it != m_timeFrameMap.end(); ++it)
   {
     while (!it->second.empty())
@@ -270,10 +264,12 @@ int TpcTimeFrameBuilder::process_fee_data()
       }
 
       //gtm_bco matching
-      uint64_t gtm_bco = 0;
+      uint64_t gtm_bco = matchFEE2GTMBCO(bx_timestamp);
 
       // valid packet in the buffer, create a new hit
-      TpcRawHit* hit = new TpcRawHitv2();
+      TpcRawHit *hit = new TpcRawHitv2();
+      m_timeFrameMap[gtm_bco].push_back(hit);
+
       hit->set_bco(bx_timestamp);
       hit->set_gtm_bco(gtm_bco);
       hit->set_packetid(m_packet_id);
@@ -320,7 +316,7 @@ int TpcTimeFrameBuilder::process_fee_data()
           waveform.push_back(data_buffer[pos++]);
 
           // an exception to deal with the last sample that is missing in the current hit format
-          if (pos +1 == pkt_length)
+          if (pos + 1 == pkt_length)
           {
             h_fee->Fill(fee, "MissingLastADC", 1);
             break;
@@ -329,13 +325,12 @@ int TpcTimeFrameBuilder::process_fee_data()
         hit->add_wavelet(start_t, waveform);
 
         // an exception to deal with the last sample that is missing in the current hit format
-        if (pos +1 == pkt_length ) break;
+        if (pos + 1 == pkt_length) break;
       }
 
       data_buffer.erase(data_buffer.begin(), data_buffer.begin() + pkt_length);
       h_fee->Fill(fee, "WordValid", pkt_length);
 
-      m_timeFrameMap[gtm_bco].push_back(hit);
     }  //     while (HEADER_LENGTH < data_buffer.size())
 
   }  //   for (unsigned int fee = 0; fee < MAX_FEECOUNT; fee++)
@@ -343,28 +338,80 @@ int TpcTimeFrameBuilder::process_fee_data()
   return Fun4AllReturnCodes::EVENT_OK;
 }
 
+uint64_t TpcTimeFrameBuilder::matchFEE2GTMBCO(uint16_t fee_bco)
+{
+  if (m_verbosity > 2)
+  {
+    cout << __PRETTY_FUNCTION__ << " : FEE BCO " << fee_bco << endl;
+  }
+
+  uint64_t gtm_bco = 0;
+  switch (m_gtmMatcherStrategy)
+  {
+  case kLastLv1Tagger:
+  {
+    // find the last GTM BCO that is less than the FEE BCO
+    if (m_gtmData.rbegin() != m_gtmData.rend())
+    {
+      gtm_bco = m_gtmData.rbegin()->first;
+
+      if (m_verbosity > 2)
+      {
+        cout << __PRETTY_FUNCTION__ << " : strategy kLastLv1Tagger, and match to gtm_bco " << gtm_bco << endl;
+      }
+    }
+    break;
+  }
+  case kFEEWaveformBCOSync:
+  {
+    // // find the GTM BCO that is closest to the FEE BCO
+    // uint64_t min_diff = 0xffffffffffffffff;
+    // for (auto it = m_gtmData.begin(); it != m_gtmData.end(); ++it)
+    // {
+    //   uint64_t diff = it->first - fee_bco;
+    //   if (diff < min_diff)
+    //   {
+    //     min_diff = diff;
+    //     gtm_bco = it->first;
+    //   }
+    // }
+    break;
+  }
+  // case kFEEHeartBeatSync:
+  // {
+  //   break;
+  // }
+  default:
+  {
+    cout << __PRETTY_FUNCTION__ << " : Error : Unknown GTM Matcher Strategy " << m_gtmMatcherStrategy << endl;
+    assert(0);
+  }
+  }
+
+  return gtm_bco;
+}
+
 int TpcTimeFrameBuilder::decode_gtm_data(uint16_t dat[16])
 {
   unsigned char *gtm = reinterpret_cast<unsigned char *>(dat);
-  gtm_payload *payload = new gtm_payload;
+  gtm_payload payload;
 
-  payload->pkt_type = gtm[0] | ((uint16_t) gtm[1] << 8);
-  if (payload->pkt_type != GTM_LVL1_ACCEPT_MAGIC_KEY && payload->pkt_type != GTM_ENDAT_MAGIC_KEY)
+  payload.pkt_type = gtm[0] | ((uint16_t) gtm[1] << 8);
+  if (payload.pkt_type != GTM_LVL1_ACCEPT_MAGIC_KEY && payload.pkt_type != GTM_ENDAT_MAGIC_KEY)
   {
-    delete payload;
     return -1;
   }
 
-  payload->is_lvl1 = payload->pkt_type == GTM_LVL1_ACCEPT_MAGIC_KEY;
-  payload->is_endat = payload->pkt_type == GTM_ENDAT_MAGIC_KEY;
+  payload.is_lvl1 = payload.pkt_type == GTM_LVL1_ACCEPT_MAGIC_KEY;
+  payload.is_endat = payload.pkt_type == GTM_ENDAT_MAGIC_KEY;
 
-  payload->bco = ((unsigned long long) gtm[2] << 0) | ((unsigned long long) gtm[3] << 8) | ((unsigned long long) gtm[4] << 16) | ((unsigned long long) gtm[5] << 24) | ((unsigned long long) gtm[6] << 32) | (((unsigned long long) gtm[7]) << 40);
-  payload->lvl1_count = ((unsigned int) gtm[8] << 0) | ((unsigned int) gtm[9] << 8) | ((unsigned int) gtm[10] << 16) | ((unsigned int) gtm[11] << 24);
-  payload->endat_count = ((unsigned int) gtm[12] << 0) | ((unsigned int) gtm[13] << 8) | ((unsigned int) gtm[14] << 16) | ((unsigned int) gtm[15] << 24);
-  payload->last_bco = ((unsigned long long) gtm[16] << 0) | ((unsigned long long) gtm[17] << 8) | ((unsigned long long) gtm[18] << 16) | ((unsigned long long) gtm[19] << 24) | ((unsigned long long) gtm[20] << 32) | (((unsigned long long) gtm[21]) << 40);
-  payload->modebits = gtm[22];
+  payload.bco = ((unsigned long long) gtm[2] << 0) | ((unsigned long long) gtm[3] << 8) | ((unsigned long long) gtm[4] << 16) | ((unsigned long long) gtm[5] << 24) | ((unsigned long long) gtm[6] << 32) | (((unsigned long long) gtm[7]) << 40);
+  payload.lvl1_count = ((unsigned int) gtm[8] << 0) | ((unsigned int) gtm[9] << 8) | ((unsigned int) gtm[10] << 16) | ((unsigned int) gtm[11] << 24);
+  payload.endat_count = ((unsigned int) gtm[12] << 0) | ((unsigned int) gtm[13] << 8) | ((unsigned int) gtm[14] << 16) | ((unsigned int) gtm[15] << 24);
+  payload.last_bco = ((unsigned long long) gtm[16] << 0) | ((unsigned long long) gtm[17] << 8) | ((unsigned long long) gtm[18] << 16) | ((unsigned long long) gtm[19] << 24) | ((unsigned long long) gtm[20] << 32) | (((unsigned long long) gtm[21]) << 40);
+  payload.modebits = gtm[22];
 
-  this->gtm_data.push_back(payload);
+  m_gtmData[payload.bco] = payload;
 
   return 0;
 }
