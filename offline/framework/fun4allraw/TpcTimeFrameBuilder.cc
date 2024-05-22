@@ -25,7 +25,7 @@ using namespace std;
 
 TpcTimeFrameBuilder::TpcTimeFrameBuilder(const int packet_id)
   : m_packet_id(packet_id)
-  , m_HistoPrefix("TpcTimeFrameBuilder" + to_string(packet_id))
+  , m_HistoPrefix("TpcTimeFrameBuilder_Packet" + to_string(packet_id))
 {
   m_feeData.resize(MAX_FEECOUNT);
 
@@ -154,6 +154,7 @@ int TpcTimeFrameBuilder::ProcessPacket(Packet *packet)
           m_feeData[fee_id].push_back(buffer[index++]);
         }
         h_norm->Fill("DMA_WORD_FEE", 1);
+        process_fee_data(fee_id);
       }
       else
       {
@@ -183,10 +184,10 @@ int TpcTimeFrameBuilder::ProcessPacket(Packet *packet)
     }
   }
 
-  return process_fee_data();
+  return Fun4AllReturnCodes::EVENT_OK;
 }
 
-int TpcTimeFrameBuilder::process_fee_data()
+int TpcTimeFrameBuilder::process_fee_data(unsigned int fee)
 {
   Fun4AllHistoManager *hm = QAHistManagerDef::getHistoManager();
   assert(hm);
@@ -194,155 +195,145 @@ int TpcTimeFrameBuilder::process_fee_data()
       m_HistoPrefix + "_FEE_DataStream_WordCount"));
   assert(h_fee);
 
-  for (unsigned int fee = 0; fee < MAX_FEECOUNT; fee++)
+  if (m_verbosity)
   {
-    if (m_verbosity)
+    cout << __PRETTY_FUNCTION__ << " : processing FEE " << fee << " with " << m_feeData[fee].size() << " words" << endl;
+  }
+
+  assert(fee < m_feeData.size());
+  auto &data_buffer = m_feeData[fee];
+
+  while (HEADER_LENGTH < data_buffer.size())
+  {
+    // packet loop
+    if (data_buffer[4] != FEE_PACKET_MAGIC_KEY_4)
     {
-      cout << __PRETTY_FUNCTION__ << " : processing FEE " << fee << " with " << m_feeData[fee].size() << " words" << endl;
-    }
-
-    assert(fee < m_feeData.size());
-    auto &data_buffer = m_feeData[fee];
-
-    while (HEADER_LENGTH < data_buffer.size())
-    {
-      // packet loop
-      if (data_buffer[4] != FEE_PACKET_MAGIC_KEY_4)
-      {
-        if (m_verbosity > 1)
-        {
-          cout << __PRETTY_FUNCTION__ << " : Error : Invalid FEE magic key at position 4 " << data_buffer[4] << endl;
-        }
-        h_fee->Fill(fee, "WordSkipped", 1);
-        data_buffer.pop_front();
-        continue;
-      }
-      if (data_buffer[4] != FEE_PACKET_MAGIC_KEY_4)
-      {
-        break;  // insufficient data, break loop to process next FEE
-      }
-
-      //valid packet
-      const uint16_t &pkt_length = data_buffer[0];                 // this is indeed the number of 10-bit words + 5 in this packet
-      const uint16_t adc_length = data_buffer[0] - HEADER_LENGTH;  // this is indeed the number of 10-bit words in this packet
-      const uint16_t sampa_address = (data_buffer[1] >> 5) & 0xf;
-      const uint16_t sampa_channel = data_buffer[1] & 0x1f;
-      const uint16_t channel = data_buffer[1] & 0x1ff;
-      const uint16_t bx_timestamp = ((data_buffer[3] & 0x1ff) << 11) | ((data_buffer[2] & 0x3ff) << 1) | (data_buffer[1] >> 9);
-
       if (m_verbosity > 1)
       {
-        cout << __PRETTY_FUNCTION__ << " : received data packet "
-             << " pkt_length = " << pkt_length
-             << " adc_length = " << adc_length
-             << " sampa_address = " << sampa_address
-             << " sampa_channel = " << sampa_channel
-             << " channel = " << channel
-             << " bx_timestamp = " << bx_timestamp
+        cout << __PRETTY_FUNCTION__ << " : Error : Invalid FEE magic key at position 4 " << data_buffer[4] << endl;
+      }
+      h_fee->Fill(fee, "WordSkipped", 1);
+      data_buffer.pop_front();
+      continue;
+    }
+    assert(data_buffer[4] == FEE_PACKET_MAGIC_KEY_4);
 
+    //valid packet
+    const uint16_t &pkt_length = data_buffer[0];  // this is indeed the number of 10-bit words + 5 in this packet
+
+    if (pkt_length < HEADER_LENGTH)
+    {
+      cout << __PRETTY_FUNCTION__ << " : Error : invalid data packet "
+           << " pkt_length = " << pkt_length
+           << endl;
+      data_buffer.pop_front();
+      h_fee->Fill(fee, "WordSkipped", 1);
+      continue;
+    }
+
+    if (pkt_length >= data_buffer.size())
+    {
+      if (m_verbosity > 2)
+      {
+        cout << __PRETTY_FUNCTION__ << " : packet over boundary, skip decoding and wait for more data: "
+                                       " pkt_length = "
+             << pkt_length
+             << " data_buffer.size() = " << data_buffer.size()
              << endl;
       }
 
-      if (pkt_length < HEADER_LENGTH)
+      return Fun4AllReturnCodes::EVENT_OK;
+    }
+
+    // continue the decoding
+    const uint16_t adc_length = data_buffer[0] - HEADER_LENGTH;  // this is indeed the number of 10-bit words in this packet
+    const uint16_t sampa_address = (data_buffer[1] >> 5) & 0xf;
+    const uint16_t sampa_channel = data_buffer[1] & 0x1f;
+    const uint16_t channel = data_buffer[1] & 0x1ff;
+    const uint16_t bx_timestamp = ((data_buffer[3] & 0x1ff) << 11) | ((data_buffer[2] & 0x3ff) << 1) | (data_buffer[1] >> 9);
+
+    if (m_verbosity > 1)
+    {
+      cout << __PRETTY_FUNCTION__ << " : received data packet "
+           << " pkt_length = " << pkt_length
+           << " adc_length = " << adc_length
+           << " sampa_address = " << sampa_address
+           << " sampa_channel = " << sampa_channel
+           << " channel = " << channel
+           << " bx_timestamp = " << bx_timestamp
+
+           << endl;
+    }
+
+    //gtm_bco matching
+    uint64_t gtm_bco = matchFEE2GTMBCO(bx_timestamp);
+
+    // valid packet in the buffer, create a new hit
+    TpcRawHit *hit = new TpcRawHitv2();
+    m_timeFrameMap[gtm_bco].push_back(hit);
+
+    hit->set_bco(bx_timestamp);
+    hit->set_gtm_bco(gtm_bco);
+    hit->set_packetid(m_packet_id);
+    hit->set_fee(fee);
+    hit->set_channel(channel);
+    hit->set_sampaaddress(sampa_address);
+    hit->set_sampachannel(sampa_channel);
+    h_fee->Fill(fee, "RawHit", 1);
+
+    const uint16_t data_crc = data_buffer[pkt_length - 1];
+    const uint16_t calc_crc = crc16(fee, 0, pkt_length - 1);
+    if (data_crc != calc_crc)
+    {
+      if (m_verbosity > 2)
       {
-        cout << __PRETTY_FUNCTION__ << " : Error : invalid data packet "
-             << " pkt_length = " << pkt_length
-             << " adc_length = " << adc_length
-             << " sampa_address = " << sampa_address
-             << " sampa_channel = " << sampa_channel
-             << " channel = " << channel
-             << " bx_timestamp = " << bx_timestamp
-
-             << endl;
-        data_buffer.pop_front();
-        continue;
+        cout << __PRETTY_FUNCTION__ << " : CRC error in FEE " << fee << " at position " << pkt_length - 1 << ": data_crc = " << data_crc << " calc_crc = " << calc_crc << endl;
       }
+      h_fee->Fill(fee, "CRCError", 1);
+      continue;
+    }
 
-      if (pkt_length >= data_buffer.size())
-      {
-        if (m_verbosity > 1)
-        {
-          cout << __PRETTY_FUNCTION__ << " : packet over boundary, skip to next load "
-                                         " pkt_length = "
-               << pkt_length
-               << " data_buffer.size() = " << data_buffer.size()
-               << endl;
-        }
+    size_t pos = HEADER_LENGTH;
+    // Format is (N sample) (start time), (1st sample)... (Nth sample)
+    while (pos < pkt_length)
+    {
+      int nsamp = data_buffer[pos++];
+      int start_t = data_buffer[pos++];
 
-        continue;
-      }
-
-      //gtm_bco matching
-      uint64_t gtm_bco = matchFEE2GTMBCO(bx_timestamp);
-
-      // valid packet in the buffer, create a new hit
-      TpcRawHit *hit = new TpcRawHitv2();
-      m_timeFrameMap[gtm_bco].push_back(hit);
-
-      hit->set_bco(bx_timestamp);
-      hit->set_gtm_bco(gtm_bco);
-      hit->set_packetid(m_packet_id);
-      hit->set_fee(fee);
-      hit->set_channel(channel);
-      hit->set_sampaaddress(sampa_address);
-      hit->set_sampachannel(sampa_channel);
-      h_fee->Fill(fee, "RawHit", 1);
-
-      const uint16_t data_crc = data_buffer[pkt_length - 1];
-      const uint16_t calc_crc = crc16(fee, 0, pkt_length - 1);
-      if (data_crc != calc_crc)
+      if (pos + nsamp >= pkt_length)
       {
         if (m_verbosity > 2)
         {
-          cout << __PRETTY_FUNCTION__ << " : CRC error in FEE " << fee << " at position " << pkt_length - 1 << ": data_crc = " << data_crc << " calc_crc = " << calc_crc << endl;
+          cout << __PRETTY_FUNCTION__ << ": WARNING : nsamp: " << nsamp
+               << ", pos: " << pos
+               << " > pkt_length: " << pkt_length << ", format error" << endl;
         }
-        h_fee->Fill(fee, "CRCError", 1);
-        continue;
+        h_fee->Fill(fee, "HitFormatError", 1);
+        break;
       }
 
-      size_t pos = HEADER_LENGTH;
-      // Format is (N sample) (start time), (1st sample)... (Nth sample)
-      while (pos < pkt_length)
+      vector<uint16_t> waveform;
+      for (int j = 0; j < nsamp; j++)
       {
-        int nsamp = data_buffer[pos++];
-        int start_t = data_buffer[pos++];
-
-        if (pos + nsamp >= pkt_length)
-        {
-          if (m_verbosity > 2)
-          {
-            cout << __PRETTY_FUNCTION__ << ": WARNING : nsamp: " << nsamp
-                 << ", pos: " << pos
-                 << " > pkt_length: " << pkt_length << ", format error" << endl;
-          }
-          h_fee->Fill(fee, "HitFormatError", 1);
-          break;
-        }
-
-        vector<uint16_t> waveform;
-        for (int j = 0; j < nsamp; j++)
-        {
-          waveform.push_back(data_buffer[pos++]);
-
-          // an exception to deal with the last sample that is missing in the current hit format
-          if (pos + 1 == pkt_length)
-          {
-            h_fee->Fill(fee, "MissingLastADC", 1);
-            break;
-          }
-        }
-        hit->add_wavelet(start_t, waveform);
+        waveform.push_back(data_buffer[pos++]);
 
         // an exception to deal with the last sample that is missing in the current hit format
-        if (pos + 1 == pkt_length) break;
+        if (pos + 1 == pkt_length)
+        {
+          h_fee->Fill(fee, "MissingLastADC", 1);
+          break;
+        }
       }
+      hit->add_wavelet(start_t, waveform);
 
-      data_buffer.erase(data_buffer.begin(), data_buffer.begin() + pkt_length);
-      h_fee->Fill(fee, "WordValid", pkt_length);
+      // an exception to deal with the last sample that is missing in the current hit format
+      if (pos + 1 == pkt_length) break;
+    }
 
-    }  //     while (HEADER_LENGTH < data_buffer.size())
+    data_buffer.erase(data_buffer.begin(), data_buffer.begin() + pkt_length);
+    h_fee->Fill(fee, "WordValid", pkt_length);
 
-  }  //   for (unsigned int fee = 0; fee < MAX_FEECOUNT; fee++)
+  }  //     while (HEADER_LENGTH < data_buffer.size())
 
   return Fun4AllReturnCodes::EVENT_OK;
 }

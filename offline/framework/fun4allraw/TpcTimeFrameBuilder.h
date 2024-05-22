@@ -42,7 +42,7 @@ class TpcTimeFrameBuilder
   uint16_t crc16(const uint32_t fee, const uint32_t index, const int l) const;
 
   int decode_gtm_data(uint16_t gtm[DAM_DMA_WORD_BYTE_LENGTH]);
-  int process_fee_data();
+  int process_fee_data(unsigned int fee_id);
 
   struct gtm_payload
   {
