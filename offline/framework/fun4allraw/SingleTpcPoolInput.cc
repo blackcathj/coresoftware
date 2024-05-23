@@ -42,6 +42,10 @@ SingleTpcPoolInput::~SingleTpcPoolInput()
       delete hititer;
     }
   }
+  for (auto iter : m_TpcTimeFrameBuilderMap)
+  {
+    delete iter.second;
+  }
 }
 
 void SingleTpcPoolInput::FillPool(const unsigned int /*nbclks*/)
@@ -62,7 +66,6 @@ void SingleTpcPoolInput::FillPool(const unsigned int /*nbclks*/)
   bool require_more_data = true;
   while (require_more_data)
   {
-
     std::unique_ptr<Event> evt(GetEventiterator()->getNextEvent());
     while (!evt)
     {
@@ -104,6 +107,7 @@ void SingleTpcPoolInput::FillPool(const unsigned int /*nbclks*/)
     {
       // keep pointer to local packet
       auto &packet = plist[i];
+      assert(packet);
 
       // get packet id
       const auto packet_id = packet->getIdentifier();
@@ -124,10 +128,12 @@ void SingleTpcPoolInput::FillPool(const unsigned int /*nbclks*/)
         packet->identify();
       }
 
+      assert(m_TpcTimeFrameBuilderMap[packet_id]);
       m_TpcTimeFrameBuilderMap[packet_id]->ProcessPacket(packet);
       require_more_data = require_more_data or m_TpcTimeFrameBuilderMap[packet_id]->isMoreDataRequired();
 
       delete packet;
+      packet=nullptr;
     }  //     for (int i = 0; i < npackets; i++)
        // // by default use previous bco clock for gtm bco
        // auto &previous_bco = m_packet_bco[packet_id];

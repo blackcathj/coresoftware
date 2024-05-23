@@ -45,25 +45,29 @@ TpcTimeFrameBuilder::TpcTimeFrameBuilder(const int packet_id)
   h->GetXaxis()->SetBinLabel(i++, "DMA_WORD_FEE");
   h->GetXaxis()->SetBinLabel(i++, "DMA_WORD_FEE_INVALID");
   h->GetXaxis()->SetBinLabel(i++, "DMA_WORD_INVALID");
+
+  h->GetYaxis()->SetBinLabel(i++, "TimeFrameSizeLimitError");
+  assert(i <= 10);
   h->GetXaxis()->LabelsOption("v");
   hm->registerHisto(h);
 
-  h = new TH1D(TString(m_HistoPrefix.c_str()) + "_PacketLength",  //
+  h = new TH1I(TString(m_HistoPrefix.c_str()) + "_PacketLength",  //
                TString(m_HistoPrefix.c_str()) + " PacketLength;PacketLength [16bit Words];Count", 1000, .5, 5e6);
   hm->registerHisto(h);
 
-  h = new TH2I(TString(m_HistoPrefix.c_str()) + "_FEE_DataStream_WordCount",  //
-               TString(m_HistoPrefix.c_str()) +
-                   " FEE Data Stream Word Count;FEE ID;Type;Count",
-               MAX_FEECOUNT, -.5, MAX_FEECOUNT - .5, 2, .5, 10.5);
+  m_hFEEDataStream = new TH2I(TString(m_HistoPrefix.c_str()) + "_FEE_DataStream_WordCount",  //
+                              TString(m_HistoPrefix.c_str()) +
+                                  " FEE Data Stream Word Count;FEE ID;Type;Count",
+                              MAX_FEECOUNT, -.5, MAX_FEECOUNT - .5, 2, .5, 10.5);
   i = 1;
-  h->GetYaxis()->SetBinLabel(i++, "WordValid");
-  h->GetYaxis()->SetBinLabel(i++, "WordSkipped");
-  h->GetYaxis()->SetBinLabel(i++, "RawHit");
-  h->GetYaxis()->SetBinLabel(i++, "HitFormatError");
-  h->GetYaxis()->SetBinLabel(i++, "MissingLastHit");
-  h->GetYaxis()->SetBinLabel(i++, "HitCRCError");
-  hm->registerHisto(h);
+  m_hFEEDataStream->GetYaxis()->SetBinLabel(i++, "WordValid");
+  m_hFEEDataStream->GetYaxis()->SetBinLabel(i++, "WordSkipped");
+  m_hFEEDataStream->GetYaxis()->SetBinLabel(i++, "RawHit");
+  m_hFEEDataStream->GetYaxis()->SetBinLabel(i++, "HitFormatError");
+  m_hFEEDataStream->GetYaxis()->SetBinLabel(i++, "MissingLastHit");
+  m_hFEEDataStream->GetYaxis()->SetBinLabel(i++, "HitCRCError");
+  assert(i <= 10);
+  hm->registerHisto(m_hFEEDataStream);
 }
 
 TpcTimeFrameBuilder::~TpcTimeFrameBuilder()
@@ -76,6 +80,16 @@ TpcTimeFrameBuilder::~TpcTimeFrameBuilder()
       it->second.pop_back();
     }
   }
+}
+
+bool TpcTimeFrameBuilder::isMoreDataRequired() const
+{
+  if (m_gtmData.size() == 0) return true;
+
+  if (m_gtmData.rbegin()->first - m_gtmData.begin()->first > kFEEDataTransmissionWindow)
+    return false;
+
+  return true;
 }
 
 int TpcTimeFrameBuilder::ProcessPacket(Packet *packet)
@@ -115,7 +129,7 @@ int TpcTimeFrameBuilder::ProcessPacket(Packet *packet)
   TH1D *h_norm = dynamic_cast<TH1D *>(hm->getHisto(
       m_HistoPrefix + "_Normalization"));
   assert(h_norm);
-  h_norm->Fill("Event", 1);
+  h_norm->Fill("Packet", 1);
 
   int l = packet->getDataLength() + 16;
   l *= 2;  // int to uint16
@@ -184,16 +198,31 @@ int TpcTimeFrameBuilder::ProcessPacket(Packet *packet)
     }
   }
 
+  // sanity check for the timeframe size
+  for (auto &timeframe : m_timeFrameMap)
+  {
+    if (timeframe.second.size() > kMaxRawHitLimit)
+    {
+      cout << __PRETTY_FUNCTION__ << " : Warning : impossible amount of hits in the same timeframe at BCO "
+           << timeframe.first << " : " << timeframe.second.size() << ", limit is " << kMaxRawHitLimit
+           << ". Dropping this time frame!"
+           << endl;
+      h_norm->Fill("TimeFrameSizeLimitError", 1);
+
+      while (!timeframe.second.empty())
+      {
+        delete timeframe.second.back();
+        timeframe.second.pop_back();
+      }
+    }
+  }
+
   return Fun4AllReturnCodes::EVENT_OK;
 }
 
 int TpcTimeFrameBuilder::process_fee_data(unsigned int fee)
 {
-  Fun4AllHistoManager *hm = QAHistManagerDef::getHistoManager();
-  assert(hm);
-  TH2I *h_fee = dynamic_cast<TH2I *>(hm->getHisto(
-      m_HistoPrefix + "_FEE_DataStream_WordCount"));
-  assert(h_fee);
+  assert(m_hFEEDataStream);
 
   if (m_verbosity)
   {
@@ -212,7 +241,7 @@ int TpcTimeFrameBuilder::process_fee_data(unsigned int fee)
       {
         cout << __PRETTY_FUNCTION__ << " : Error : Invalid FEE magic key at position 4 " << data_buffer[4] << endl;
       }
-      h_fee->Fill(fee, "WordSkipped", 1);
+      m_hFEEDataStream->Fill(fee, "WordSkipped", 1);
       data_buffer.pop_front();
       continue;
     }
@@ -227,7 +256,7 @@ int TpcTimeFrameBuilder::process_fee_data(unsigned int fee)
            << " pkt_length = " << pkt_length
            << endl;
       data_buffer.pop_front();
-      h_fee->Fill(fee, "WordSkipped", 1);
+      m_hFEEDataStream->Fill(fee, "WordSkipped", 1);
       continue;
     }
 
@@ -279,7 +308,7 @@ int TpcTimeFrameBuilder::process_fee_data(unsigned int fee)
     hit->set_channel(channel);
     hit->set_sampaaddress(sampa_address);
     hit->set_sampachannel(sampa_channel);
-    h_fee->Fill(fee, "RawHit", 1);
+    m_hFEEDataStream->Fill(fee, "RawHit", 1);
 
     const uint16_t data_crc = data_buffer[pkt_length - 1];
     const uint16_t calc_crc = crc16(fee, 0, pkt_length - 1);
@@ -289,7 +318,7 @@ int TpcTimeFrameBuilder::process_fee_data(unsigned int fee)
       {
         cout << __PRETTY_FUNCTION__ << " : CRC error in FEE " << fee << " at position " << pkt_length - 1 << ": data_crc = " << data_crc << " calc_crc = " << calc_crc << endl;
       }
-      h_fee->Fill(fee, "CRCError", 1);
+      m_hFEEDataStream->Fill(fee, "CRCError", 1);
       continue;
     }
 
@@ -308,7 +337,7 @@ int TpcTimeFrameBuilder::process_fee_data(unsigned int fee)
                << ", pos: " << pos
                << " > pkt_length: " << pkt_length << ", format error" << endl;
         }
-        h_fee->Fill(fee, "HitFormatError", 1);
+        m_hFEEDataStream->Fill(fee, "HitFormatError", 1);
         break;
       }
 
@@ -320,7 +349,7 @@ int TpcTimeFrameBuilder::process_fee_data(unsigned int fee)
         // an exception to deal with the last sample that is missing in the current hit format
         if (pos + 1 == pkt_length)
         {
-          h_fee->Fill(fee, "MissingLastADC", 1);
+          m_hFEEDataStream->Fill(fee, "MissingLastADC", 1);
           break;
         }
       }
@@ -331,7 +360,7 @@ int TpcTimeFrameBuilder::process_fee_data(unsigned int fee)
     }
 
     data_buffer.erase(data_buffer.begin(), data_buffer.begin() + pkt_length);
-    h_fee->Fill(fee, "WordValid", pkt_length);
+    m_hFEEDataStream->Fill(fee, "WordValid", pkt_length);
 
   }  //     while (HEADER_LENGTH < data_buffer.size())
 
@@ -411,7 +440,17 @@ int TpcTimeFrameBuilder::decode_gtm_data(uint16_t dat[16])
   payload.last_bco = ((unsigned long long) gtm[16] << 0) | ((unsigned long long) gtm[17] << 8) | ((unsigned long long) gtm[18] << 16) | ((unsigned long long) gtm[19] << 24) | ((unsigned long long) gtm[20] << 32) | (((unsigned long long) gtm[21]) << 40);
   payload.modebits = gtm[22];
 
-  m_gtmData[payload.bco] = payload;
+  constexpr uint64_t bco_limit = 1ULL << GTMBCObits;
+  assert(payload.bco > bco_limit);
+  if (payload.bco < m_GTMBCOLastReading)
+  {
+    cout << __PRETTY_FUNCTION__ << " : Info : GTM BCO rollover detected, last reading " << m_GTMBCOLastReading
+         << " current reading " << payload.bco << " on packet " << m_packet_id << endl;
+    ++m_GTMBCORollOverCounter;
+  }
+  m_GTMBCOLastReading = payload.bco;
+  uint64_t rollover_corrected_bco = (m_GTMBCORollOverCounter << GTMBCObits) + payload.bco;
+  m_gtmData[rollover_corrected_bco] = payload;
 
   return 0;
 }

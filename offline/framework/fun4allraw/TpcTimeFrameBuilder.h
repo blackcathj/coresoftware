@@ -12,6 +12,7 @@
 
 class Packet;
 class TpcRawHit;
+class TH2I;
 
 class TpcTimeFrameBuilder
 {
@@ -20,7 +21,7 @@ class TpcTimeFrameBuilder
   virtual ~TpcTimeFrameBuilder();
 
   int ProcessPacket(Packet *);
-  bool isMoreDataRequired() const { return true; }
+  bool isMoreDataRequired() const;
 
   void setVerbosity(const int i) { m_verbosity = i; }
 
@@ -67,6 +68,7 @@ class TpcTimeFrameBuilder
 
   //! GTM BCO -> TpcRawHit
   std::map<uint64_t, std::vector<TpcRawHit *>> m_timeFrameMap;
+  static const size_t kMaxRawHitLimit = 10000; // 10k hits per event > 256ch/fee * 26fee
 
   // -------------------------
   // GTM Matcher
@@ -75,7 +77,7 @@ class TpcTimeFrameBuilder
   //! GTM Matcher Strategy, order by reliability
   enum enu_gtmMatcherStrategy
   {
-    //! if knowing nothing, simply matching FEE waveform to the last levl1 tagger
+    //! if knowing nothing, simply matching FEE waveform to the last level1 tagger
     kLastLv1Tagger = 0,
     //! tracking FEE BCO to GTM BCO sync
     kFEEWaveformBCOSync = 1,
@@ -84,7 +86,22 @@ class TpcTimeFrameBuilder
   };
   enu_gtmMatcherStrategy m_gtmMatcherStrategy = kLastLv1Tagger;
   uint64_t matchFEE2GTMBCO(uint16_t fee_bco);
+
+  const static int GTMBCObits = 40;
+  uint64_t m_GTMBCORollOverCounter = 0;
+  uint64_t m_GTMBCOLastReading = 0;
+  //! roll over corrected GTM BCO -> GTM payload data
   std::map<uint64_t, gtm_payload> m_gtmData;
+  // //! FEE ID -> last roll over corrected GTM BCO
+  // std::map<unsigned int, uint64_t> m_feeLastGTMBCO;  
+
+  //! errors allowed in match FEE BCO to GTM BCO
+  static const int kFEEBCOMatchWindow = 5;
+  //! time used to transmit all FEE data to PCIe in GTM BCO time
+  static const int kFEEDataTransmissionWindow = 1000000; // 100ms for very large non-ZS data at 10Hz
+
+  TH2I * m_hFEEDataStream = nullptr;
+
 };
 
 #endif
