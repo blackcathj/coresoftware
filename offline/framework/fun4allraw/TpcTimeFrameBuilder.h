@@ -9,6 +9,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <limits>
 
 class Packet;
 class TpcRawHit;
@@ -89,6 +90,8 @@ class TpcTimeFrameBuilder
   uint64_t matchFEE2GTMBCO(uint16_t fee_bco);
 
   const static int GTMBCObits = 40;
+  const static uint64_t GTMBCOmask_ValidBits = (1ULL << GTMBCObits) -1;
+  const static uint64_t GTMBCOmask_RollOverCounts = std::numeric_limits<uint64_t>::max() - GTMBCOmask_ValidBits;
   uint64_t m_GTMBCORollOverCounter = 0;
   uint64_t m_GTMBCOLastReading = 0;
   //! roll over corrected GTM BCO -> GTM payload data

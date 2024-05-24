@@ -66,6 +66,7 @@ TpcTimeFrameBuilder::TpcTimeFrameBuilder(const int packet_id)
   m_hFEEDataStream->GetYaxis()->SetBinLabel(i++, "HitFormatError");
   m_hFEEDataStream->GetYaxis()->SetBinLabel(i++, "MissingLastHit");
   m_hFEEDataStream->GetYaxis()->SetBinLabel(i++, "HitCRCError");
+  m_hFEEDataStream->GetYaxis()->SetBinLabel(i++, "HitUnusedBeforeCleanup");
   assert(i <= 10);
   hm->registerHisto(m_hFEEDataStream);
 }
@@ -96,16 +97,36 @@ void TpcTimeFrameBuilder::CleanupUsedPackets(const uint64_t bclk)
 {
   if (m_verbosity > 2)
   {
-    std::cout << __PRETTY_FUNCTION__<<" packet "<<m_packet_id   << ": cleaning up bcos < 0x" << std::hex
+    std::cout << __PRETTY_FUNCTION__ << " packet " << m_packet_id << ": cleaning up bcos < 0x" << std::hex
               << bclk << std::dec << std::endl;
   }
 
+  uint64_t bclk_rollover_corrected = bclk;
+  if (m_gtmData.begin() != m_gtmData.end())
+  {
+    if ((m_gtmData.begin()->first & GTMBCOmask_ValidBits) > bclk + (1ULL << (GTMBCObits - 1)))
+    {
+      bclk_rollover_corrected = (((m_gtmData.begin()->first >> GTMBCObits) + 1) << GTMBCObits) | (bclk & GTMBCOmask_ValidBits);
+    }
+    else if ((m_gtmData.begin()->first & GTMBCOmask_ValidBits) + (1ULL << (GTMBCObits - 1)) < bclk)
+    {
+      bclk_rollover_corrected = (((m_gtmData.begin()->first >> GTMBCObits) - 1) << GTMBCObits) | (bclk & GTMBCOmask_ValidBits);
+    }
+    else
+    {
+      bclk_rollover_corrected = (m_gtmData.begin()->first & GTMBCOmask_RollOverCounts) | (bclk & GTMBCOmask_ValidBits);
+    }
+  }
+
+  assert(m_hFEEDataStream);
+
   for (auto it = m_timeFrameMap.begin(); it != m_timeFrameMap.end();)
   {
-    if (it->first <= bclk)
+    if (it->first <= bclk_rollover_corrected)
     {
       while (!it->second.empty())
       {
+        m_hFEEDataStream->Fill(it->second.back()->get_fee(), "HitUnusedBeforeCleanup", 1);
         delete it->second.back();
         it->second.pop_back();
       }
@@ -113,9 +134,9 @@ void TpcTimeFrameBuilder::CleanupUsedPackets(const uint64_t bclk)
     }
     else
     {
-      ++it;
+      break;
     }
-  }
+  }  //   for (auto it = m_timeFrameMap.begin(); it != m_timeFrameMap.end();)
 
   for (auto it = m_gtmData.begin(); it != m_gtmData.end();)
   {
@@ -125,10 +146,9 @@ void TpcTimeFrameBuilder::CleanupUsedPackets(const uint64_t bclk)
     }
     else
     {
-      ++it;
+      break;
     }
-  }
-
+  }  //   for (auto it = m_gtmData.begin(); it != m_gtmData.end();)
 }
 
 int TpcTimeFrameBuilder::ProcessPacket(Packet *packet)
