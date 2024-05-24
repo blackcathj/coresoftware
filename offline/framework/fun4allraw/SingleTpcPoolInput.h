@@ -14,6 +14,7 @@ class TpcRawHit;
 class Packet;
 class TpcTimeFrameBuilder;
 
+//! Provide TpcTimeFrameBuilder as a unified interface for Fun4AllStreamingInputManager
 class SingleTpcPoolInput : public SingleStreamingInput
 {
  public:

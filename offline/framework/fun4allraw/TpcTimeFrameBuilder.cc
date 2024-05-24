@@ -92,6 +92,45 @@ bool TpcTimeFrameBuilder::isMoreDataRequired() const
   return true;
 }
 
+void TpcTimeFrameBuilder::CleanupUsedPackets(const uint64_t bclk)
+{
+  if (m_verbosity > 2)
+  {
+    std::cout << __PRETTY_FUNCTION__<<" packet "<<m_packet_id   << ": cleaning up bcos < 0x" << std::hex
+              << bclk << std::dec << std::endl;
+  }
+
+  for (auto it = m_timeFrameMap.begin(); it != m_timeFrameMap.end();)
+  {
+    if (it->first <= bclk)
+    {
+      while (!it->second.empty())
+      {
+        delete it->second.back();
+        it->second.pop_back();
+      }
+      m_timeFrameMap.erase(it++);
+    }
+    else
+    {
+      ++it;
+    }
+  }
+
+  for (auto it = m_gtmData.begin(); it != m_gtmData.end();)
+  {
+    if (it->first <= bclk)
+    {
+      m_gtmData.erase(it++);
+    }
+    else
+    {
+      ++it;
+    }
+  }
+
+}
+
 int TpcTimeFrameBuilder::ProcessPacket(Packet *packet)
 {
   if (!packet)

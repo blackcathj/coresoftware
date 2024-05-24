@@ -133,7 +133,7 @@ void SingleTpcPoolInput::FillPool(const unsigned int /*nbclks*/)
       require_more_data = require_more_data or m_TpcTimeFrameBuilderMap[packet_id]->isMoreDataRequired();
 
       delete packet;
-      packet=nullptr;
+      packet = nullptr;
     }  //     for (int i = 0; i < npackets; i++)
        // // by default use previous bco clock for gtm bco
        // auto &previous_bco = m_packet_bco[packet_id];
@@ -313,33 +313,39 @@ void SingleTpcPoolInput::CleanupUsedPackets(const uint64_t bclk)
     std::cout << "cleaning up bcos < 0x" << std::hex
               << bclk << std::dec << std::endl;
   }
-  std::vector<uint64_t> toclearbclk;
-  for (const auto &iter : m_TpcRawHitMap)
-  {
-    if (iter.first <= bclk)
-    {
-      for (auto pktiter : iter.second)
-      {
-        delete pktiter;
-      }
-      toclearbclk.push_back(iter.first);
-    }
-    else
-    {
-      break;
-    }
-  }
-  // for (auto iter :  m_BeamClockFEE)
-  // {
-  //   iter.second.clear();
-  // }
 
-  for (auto iter : toclearbclk)
+  for (auto &iter : m_TpcTimeFrameBuilderMap)
   {
-    // m_BclkStack.erase(iter);
-    // m_BeamClockFEE.erase(iter);
-    m_TpcRawHitMap.erase(iter);
+    iter.second->CleanupUsedPackets(bclk);
   }
+
+  // std::vector<uint64_t> toclearbclk;
+  // for (const auto &iter : m_TpcRawHitMap)
+  // {
+  //   if (iter.first <= bclk)
+  //   {
+  //     for (auto pktiter : iter.second)
+  //     {
+  //       delete pktiter;
+  //     }
+  //     toclearbclk.push_back(iter.first);
+  //   }
+  //   else
+  //   {
+  //     break;
+  //   }
+  // }
+  // // for (auto iter :  m_BeamClockFEE)
+  // // {
+  // //   iter.second.clear();
+  // // }
+
+  // for (auto iter : toclearbclk)
+  // {
+  //   // m_BclkStack.erase(iter);
+  //   // m_BeamClockFEE.erase(iter);
+  //   m_TpcRawHitMap.erase(iter);
+  // }
 }
 
 // bool SingleTpcPoolInput::CheckPoolDepth(const uint64_t bclk)

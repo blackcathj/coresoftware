@@ -22,6 +22,7 @@ class TpcTimeFrameBuilder
 
   int ProcessPacket(Packet *);
   bool isMoreDataRequired() const;
+  void CleanupUsedPackets(const uint64_t bclk) ;
 
   void setVerbosity(const int i) { m_verbosity = i; }
 
