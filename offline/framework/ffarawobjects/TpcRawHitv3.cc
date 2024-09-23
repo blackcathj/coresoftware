@@ -1,12 +1,12 @@
-#include "TpcRawHitv2.h"
+#include "TpcRawHitv3.h"
 
 #include <iostream>
 
-TpcRawHitv2::TpcRawHitv2(TpcRawHit *tpchit)
+TpcRawHitv3::TpcRawHitv3(TpcRawHit *tpchit)
 {
-  if (dynamic_cast<TpcRawHitv2 *>(tpchit))
+  if (dynamic_cast<TpcRawHitv3 *>(tpchit))
   {
-    *this = *dynamic_cast<TpcRawHitv2 *>(tpchit);
+    *this = *dynamic_cast<TpcRawHitv3 *>(tpchit);
     return;
   }
   else
@@ -15,8 +15,8 @@ TpcRawHitv2::TpcRawHitv2(TpcRawHit *tpchit)
     if (once)
     {
       once = false;
-      std::cout << "TpcRawHitv2::TpcRawHitv2(TpcRawHit *tpchit) - WARNING - "
-                << "This constructor is casting a different version TpcRawHit to TpcRawHitv2 which can be inefficient. Please use TpcRawHitv2 or write a dedicated converter." << std::endl;
+      std::cout << "TpcRawHitv3::TpcRawHitv3(TpcRawHit *tpchit) - WARNING - "
+                << "This constructor is casting a different version TpcRawHit to TpcRawHitv3 which can be inefficient. Please use TpcRawHitv3 or write a dedicated converter." << std::endl;
     }
 
     set_bco(tpchit->get_bco());
@@ -38,9 +38,9 @@ TpcRawHitv2::TpcRawHitv2(TpcRawHit *tpchit)
   }
 }
 
-void TpcRawHitv2::identify(std::ostream &os) const
+void TpcRawHitv3::identify(std::ostream &os) const
 {
-  os << "TpcRawHitv2 (TPC with zero suppression): ";
+  os << "TpcRawHitv3 (TPC with zero suppression): ";
   os << "  BCO: 0x" << std::hex << bco << "GTM BCO: 0x"<< gtm_bco << std::dec << std::endl;
   os << "  packet id: " << packetid << std::endl;
   os << "  fee: " << fee << std::endl;
@@ -60,12 +60,12 @@ void TpcRawHitv2::identify(std::ostream &os) const
 
 }
 
-void TpcRawHitv2::Clear(Option_t * /*unused*/)
+void TpcRawHitv3::Clear(Option_t * /*unused*/)
 {
   m_wavelets = std::map<uint16_t, std::vector<uint16_t>>();
 }
 
-uint16_t TpcRawHitv2::get_samples() const
+uint16_t TpcRawHitv3::get_samples() const
 {
   uint16_t samples = 0;
 
@@ -77,12 +77,12 @@ uint16_t TpcRawHitv2::get_samples() const
   return samples;
 }
 
-void TpcRawHitv2::set_samples(uint16_t const)
+void TpcRawHitv3::set_samples(uint16_t const)
 {
   std::cout << __PRETTY_FUNCTION__ << " : Error : deprecated function call" << std::endl;
 }
 
-uint16_t TpcRawHitv2::get_adc(size_t sample) const
+uint16_t TpcRawHitv3::get_adc(size_t sample) const
 {
   uint16_t adc = 0;
 
@@ -102,7 +102,7 @@ uint16_t TpcRawHitv2::get_adc(size_t sample) const
 }
 
 // cppcheck-suppress virtualCallInConstructor
-void TpcRawHitv2::set_adc(size_t , uint16_t )
+void TpcRawHitv3::set_adc(size_t , uint16_t )
 {
   std::cout << __PRETTY_FUNCTION__ << " : Error : deprecated function call" << std::endl;
 }

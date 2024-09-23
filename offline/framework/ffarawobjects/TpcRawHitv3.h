@@ -9,13 +9,13 @@
 #include <limits>
 #include <map>
 
-// TpcRawHitv2 TPC hit with zero suppression
-class TpcRawHitv2 : public TpcRawHit
+// TpcRawHitv3 TPC hit with zero suppression
+class TpcRawHitv3 : public TpcRawHit
 {
  public:
-  TpcRawHitv2() = default;
-  TpcRawHitv2(TpcRawHit *tpchit);
-  ~TpcRawHitv2() override = default;
+  TpcRawHitv3() = default;
+  TpcRawHitv3(TpcRawHit *tpchit);
+  ~TpcRawHitv3() override = default;
 
   /** identify Function from PHObject
       @param os Output Stream
@@ -90,7 +90,7 @@ class TpcRawHitv2 : public TpcRawHit
   //! start sample -> wavelets of consecutive ADC values
   std::map<uint16_t, std::vector<uint16_t>> m_wavelets;
 
-  ClassDefOverride(TpcRawHitv2, 1)
+  ClassDefOverride(TpcRawHitv3, 1)
 };
 
 #endif
