@@ -14,10 +14,6 @@
 
 class SingleStreamingInput;
 class Gl1Packet;
-class InttRawHit;
-class MicromegasRawHit;
-class MvtxRawHit;
-class MvtxFeeIdInfo;
 class PHCompositeNode;
 class SyncObject;
 class SingleGl1PoolInput;
@@ -33,10 +29,9 @@ class Fun4AllTpcTimeFrameInputManager : public Fun4AllInputManager
   int fileclose() override;
   int run(const int nevents = 0) override;
 
-  void Fun4AllTpcTimeFrameInputManager::registerStreamingGL1Input(
-      SingleGl1PoolInput *evtin)
+  void registerStreamingGL1Input(SingleGl1PoolInput *evtin);
 
-      void Print(const std::string &what = "ALL") const override;
+  void Print(const std::string &what = "ALL") const override;
   int ResetEvent() override;
   int PushBackEvents(const int i) override;
   int GetSyncObject(SyncObject **mastersync) override;
@@ -56,9 +51,11 @@ class Fun4AllTpcTimeFrameInputManager : public Fun4AllInputManager
 
   uint64_t m_RefBCO{0};
 
+  std::pair<uint64_t, Gl1Packet *> m_Gl1RawHitMap{0, nullptr};
+
   int m_RunNumber{0};
 
-  std::pair<unsigned int, unsigned int>m_tpc_bco_range{-256, 256};
+  std::pair<unsigned int, unsigned int> m_tpc_bco_range{-256, 256};
 
   SingleGl1PoolInput *m_Gl1Input;
 };
