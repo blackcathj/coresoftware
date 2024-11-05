@@ -10,6 +10,7 @@
 #include <phool/PHNodeIterator.h>  // for PHNodeIterator
 #include <phool/getClass.h>
 #include <phool/phool.h>
+#include <phool/PHTimer.h>  // for PHTimer
 
 #include <Event/Event.h>
 #include <Event/EventTypes.h>
@@ -23,6 +24,7 @@ SingleTpcPoolInput::SingleTpcPoolInput(const std::string &name)
 {
   SubsystemEnum(InputManagerType::TPC);
   m_rawHitContainerName = "TPCRAWHIT";
+  m_packetTimer = new PHTimer("SingleTpcPoolInput_" + name);
 }
 
 void SingleTpcPoolInput::FillPool(const uint64_t minBCO)
@@ -108,6 +110,17 @@ void SingleTpcPoolInput::FillPool(const uint64_t minBCO)
     }
     for (auto packet : pktvec)
     {
+
+      // if (Verbosity() >= 1)
+      {
+        std::cout << __PRETTY_FUNCTION__ << "\t- : received packet ";
+        packet->identify();
+
+        m_packetTimer->print_stat();
+      }
+      m_packetTimer->restart();
+
+
       // get packet id
       const auto packet_id = packet->getIdentifier();
 
@@ -262,6 +275,8 @@ void SingleTpcPoolInput::FillPool(const uint64_t minBCO)
         }
       }
       delete packet;
+
+      m_packetTimer->stop();
     }
   }
 
