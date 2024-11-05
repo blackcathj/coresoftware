@@ -122,7 +122,7 @@ class TpcTimeFrameBuilder
   static const size_t kMaxRawHitLimit = 10000;  // 10k hits per event > 256ch/fee * 26fee
   
   //! fast skip mode when searching for particular GL1 BCO over long segment of files
-  bool m_fastBCOSkip = false;
+  bool m_fastBCOSkip = true;
 
   // -------------------------
   // GTM Matcher
