@@ -503,23 +503,23 @@ int TpcTimeFrameBuilder::process_fee_data(unsigned int fee)
     payload.user_word = data_buffer[3] & 0x7f;
     payload.bx_timestamp = ((data_buffer[6] & 0x3ff) << 10) | (data_buffer[5] & 0x3ff);
 
-    if (not m_fastBCOSkip)
-    {
-      payload.data_crc = data_buffer[pkt_length];
-      payload.calc_crc = crc16(fee, 0, pkt_length);
-      if (payload.data_crc != payload.calc_crc)
-      {
-        if (m_verbosity > 2)
-        {
-          cout << __PRETTY_FUNCTION__ << "\t- : CRC error in FEE "
-               << fee << "\t- at position " << pkt_length - 1
-               << ": data_crc = " << payload.data_crc
-               << "\t- calc_crc = " << payload.calc_crc << endl;
-        }
-        m_hFEEDataStream->Fill(fee, "CRCError", 1);
-        // continue;
-      }
-    }  //     if (not m_fastBCOSkip)
+    // if (not m_fastBCOSkip)
+    // {
+    //   payload.data_crc = data_buffer[pkt_length];
+    //   payload.calc_crc = crc16(fee, 0, pkt_length);
+    //   if (payload.data_crc != payload.calc_crc)
+    //   {
+    //     if (m_verbosity > 2)
+    //     {
+    //       cout << __PRETTY_FUNCTION__ << "\t- : CRC error in FEE "
+    //            << fee << "\t- at position " << pkt_length - 1
+    //            << ": data_crc = " << payload.data_crc
+    //            << "\t- calc_crc = " << payload.calc_crc << endl;
+    //     }
+    //     m_hFEEDataStream->Fill(fee, "CRCError", 1);
+    //     // continue;
+    //   }
+    // }  //     if (not m_fastBCOSkip)
 
     assert(fee < m_bcoMatchingInformation_vec.size());
     auto& m_bcoMatchingInformation = m_bcoMatchingInformation_vec[fee];
@@ -626,80 +626,80 @@ int TpcTimeFrameBuilder::process_fee_data(unsigned int fee)
            << "\t- calc_crc = 0x" << hex << payload.calc_crc << dec << endl;
     }
 
-    if (not m_fastBCOSkip)
-    {
-      // valid packet in the buffer, create a new hit
-      TpcRawHit *hit = new TpcRawHitv2();
-      m_timeFrameMap[payload.gtm_bco].push_back(hit);
+    // if (not m_fastBCOSkip)
+    // {
+    //   // valid packet in the buffer, create a new hit
+    //   TpcRawHit *hit = new TpcRawHitv2();
+    //   m_timeFrameMap[payload.gtm_bco].push_back(hit);
 
-      hit->set_bco(payload.bx_timestamp);
-      hit->set_gtm_bco(payload.gtm_bco);
-      hit->set_packetid(m_packet_id);
-      hit->set_fee(fee);
-      hit->set_channel(payload.channel);
-      hit->set_sampaaddress(payload.sampa_address);
-      hit->set_sampachannel(payload.sampa_channel);
+    //   hit->set_bco(payload.bx_timestamp);
+    //   hit->set_gtm_bco(payload.gtm_bco);
+    //   hit->set_packetid(m_packet_id);
+    //   hit->set_fee(fee);
+    //   hit->set_channel(payload.channel);
+    //   hit->set_sampaaddress(payload.sampa_address);
+    //   hit->set_sampachannel(payload.sampa_channel);
 
-      m_hFEEDataStream->Fill(fee, "RawHit", 1);
+    //   m_hFEEDataStream->Fill(fee, "RawHit", 1);
 
-      // Format is (N sample) (start time), (1st sample)... (Nth sample)
-      size_t pos = HEADER_LENGTH;
-      while (pos + 2 < pkt_length)
-      {
-        const uint16_t& nsamp = data_buffer[pos++];
-        const uint16_t& start_t = data_buffer[pos++];
-        if (m_verbosity > 3)
-        {
-          cout << __PRETTY_FUNCTION__ << ": nsamp: " << nsamp
-               << "+ pos: " << pos
-               << " pkt_length: " << pkt_length << " start_t:" << start_t << endl;
-        }
+    //   // Format is (N sample) (start time), (1st sample)... (Nth sample)
+    //   size_t pos = HEADER_LENGTH;
+    //   while (pos + 2 < pkt_length)
+    //   {
+    //     const uint16_t& nsamp = data_buffer[pos++];
+    //     const uint16_t& start_t = data_buffer[pos++];
+    //     if (m_verbosity > 3)
+    //     {
+    //       cout << __PRETTY_FUNCTION__ << ": nsamp: " << nsamp
+    //            << "+ pos: " << pos
+    //            << " pkt_length: " << pkt_length << " start_t:" << start_t << endl;
+    //     }
 
-        if (pos + nsamp > pkt_length)
-        {
-          if (m_verbosity > 1)
-          {
-            cout << __PRETTY_FUNCTION__ << ": WARNING : nsamp: " << nsamp
-                 << "+ pos: " << pos
-                 << " > pkt_length: " << pkt_length << ", format error over length: " << endl;
+    //     if (pos + nsamp > pkt_length)
+    //     {
+    //       if (m_verbosity > 1)
+    //       {
+    //         cout << __PRETTY_FUNCTION__ << ": WARNING : nsamp: " << nsamp
+    //              << "+ pos: " << pos
+    //              << " > pkt_length: " << pkt_length << ", format error over length: " << endl;
 
-            for (int print_pos = 0; print_pos <= pkt_length; ++print_pos)
-            {
-              cout << "\t[" << print_pos << "]=0x" << hex << data_buffer[print_pos] << dec << "(" << data_buffer[print_pos] << ")";
-            }
-            cout << endl;
-          }
-          m_hFEEDataStream->Fill(fee, "HitFormatErrorOverLength", 1);
+    //         for (int print_pos = 0; print_pos <= pkt_length; ++print_pos)
+    //         {
+    //           cout << "\t[" << print_pos << "]=0x" << hex << data_buffer[print_pos] << dec << "(" << data_buffer[print_pos] << ")";
+    //         }
+    //         cout << endl;
+    //       }
+    //       m_hFEEDataStream->Fill(fee, "HitFormatErrorOverLength", 1);
 
-          break;
-        }
+    //       break;
+    //     }
 
-        const unsigned int fee_sampa_address = fee * MAX_SAMPA + payload.sampa_address;
-        std::vector<uint16_t> adc(nsamp);
-        for (int j = 0; j < nsamp; j++)
-        {
-          adc[j] = data_buffer[pos++];
+    //     const unsigned int fee_sampa_address = fee * MAX_SAMPA + payload.sampa_address;
+    //     std::vector<uint16_t> adc(nsamp);
+    //     for (int j = 0; j < nsamp; j++)
+    //     {
+    //       adc[j] = data_buffer[pos++];
 
-          m_hFEESAMPAADC->Fill(start_t + j, fee_sampa_address, adc[j]);
-        }
-        payload.waveforms.push_back(std::make_pair(start_t, std::move(adc)));
+    //       m_hFEESAMPAADC->Fill(start_t + j, fee_sampa_address, adc[j]);
+    //     }
+    //     payload.waveforms.push_back(std::make_pair(start_t, std::move(adc)));
 
-        //   // an exception to deal with the last sample that is missing in the current hit format
-        //   if (pos + 1 == pkt_length) break;
-      }
+    //     //   // an exception to deal with the last sample that is missing in the current hit format
+    //     //   if (pos + 1 == pkt_length) break;
+    //   }
 
-      if (pos != pkt_length)
-      {
-        if (m_verbosity > 1)
-        {
-          cout << __PRETTY_FUNCTION__ << ": WARNING : residual data at the end of decoding:"
-               << " pos: " << pos
-               << " <pkt_length: " << pkt_length << ", format error under length" << endl;
-        }
-        m_hFEEDataStream->Fill(fee, "HitFormatErrorMismatchedLength", 1);
-      }
+    //   if (pos != pkt_length)
+    //   {
+    //     if (m_verbosity > 1)
+    //     {
+    //       cout << __PRETTY_FUNCTION__ << ": WARNING : residual data at the end of decoding:"
+    //            << " pos: " << pos
+    //            << " <pkt_length: " << pkt_length << ", format error under length" << endl;
+    //     }
+    //     m_hFEEDataStream->Fill(fee, "HitFormatErrorMismatchedLength", 1);
+    //   }
 
-    }  //     if (not m_fastBCOSkip)
+    // }  //     if (not m_fastBCOSkip)
 
     data_buffer.erase(data_buffer.begin(), data_buffer.begin() + pkt_length + 1);
     m_hFEEDataStream->Fill(fee, "WordValid", pkt_length + 1);
@@ -778,26 +778,26 @@ int TpcTimeFrameBuilder::decode_gtm_data(const TpcTimeFrameBuilder::dma_word& gt
     }
   }
 
-  if (not(m_fastBCOSkip and (payload.is_lvl1 or payload.is_endat)))
-  {
-    int fee = -1;
-    for (auto& bcoMatchingInformation : m_bcoMatchingInformation_vec)
-    {
-      ++fee;
+  // if (not(m_fastBCOSkip and (payload.is_lvl1 or payload.is_endat)))
+  // {
+  //   int fee = -1;
+  //   for (auto& bcoMatchingInformation : m_bcoMatchingInformation_vec)
+  //   {
+  //     ++fee;
 
-      if (m_verbosity > 2)
-      {
-        cout << __PRETTY_FUNCTION__ << "\t- : processing GTM data for FEE " << fee << endl;
-      }
+  //     if (m_verbosity > 2)
+  //     {
+  //       cout << __PRETTY_FUNCTION__ << "\t- : processing GTM data for FEE " << fee << endl;
+  //     }
 
-      bcoMatchingInformation.save_gtm_bco_information(payload);
+  //     bcoMatchingInformation.save_gtm_bco_information(payload);
 
-      if (m_verbosity > 2)
-      {
-        bcoMatchingInformation.print_gtm_bco_information();
-      }
-    }
-  }  //   if (not m_fastBCOSkip)
+  //     if (m_verbosity > 2)
+  //     {
+  //       bcoMatchingInformation.print_gtm_bco_information();
+  //     }
+  //   }
+  // }  //   if (not m_fastBCOSkip)
 
   return 0;
 }
