@@ -404,7 +404,7 @@ class TpcTimeFrameBuilderRun3 : public TpcTimeFrameBuilderBase
     static constexpr unsigned int m_max_matching_data_size = 10;
 
     //! max time in GTM BCO for FEE data to sync over to datastream, increased to 1/4 of FEE clock rollover
-    static constexpr unsigned int m_max_fee_sync_time =  (1<<20)/4/4;
+    static constexpr unsigned int m_max_fee_sync_time =  (1<<20)/4/6;
 
     //! fixed GTM BCO offset applied when BX_COUNTER_SYNC_T defines the reference clock
     static constexpr uint64_t kBXCounterSyncGtmBcoOffset = 0;
